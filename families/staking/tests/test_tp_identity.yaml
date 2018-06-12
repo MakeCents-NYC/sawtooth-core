@@ -39,15 +39,15 @@ services:
     expose:
       - 4004
     command: nose2-3
-        -c /project/sawtooth-core/families/identity/nose2.cfg
+        -c /project/sawtooth-core/families/staking/nose2.cfg
         -v
-        -s /project/sawtooth-core/families/identity/tests
-        test_tp_identity
+        -s /project/sawtooth-core/families/staking/tests
+        test_tp_stake
     stop_signal: SIGKILL
     environment:
         TEST_BIND: "tcp://eth0:4004"
-        PYTHONPATH: "/project/sawtooth-core/families/identity:\
-            /project/sawtooth-core/families/identity/tests:\
+        PYTHONPATH: "/project/sawtooth-core/families/staking:\
+            /project/sawtooth-core/families/staking/tests:\
             /project/sawtooth-core/sdk/python:\
             /project/sawtooth-core/integration:\
             /project/sawtooth-core/signing"

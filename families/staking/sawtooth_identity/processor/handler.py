@@ -29,13 +29,16 @@ from sawtooth_identity.protobuf.identity_pb2 import Role
 from sawtooth_identity.protobuf.identity_pb2 import RoleList
 from sawtooth_identity.protobuf.identities_pb2 import IdentityPayload
 
+
+from sawtooth_identity.protobuf.stake_pb2 import Stake
+from sawtooth_identity.protobuf.stake_pb2 import StakeList
+from sawtooth_identity.protobuf.stake_payload_pb2 import StakePayload
+
 LOGGER = logging.getLogger(__name__)
 
 # The identity namespace is special: it is not derived from a hash.
-IDENTITY_NAMESPACE = '00001d'
-POLICY_PREFIX = '00'
-ROLE_PREFIX = '01'
-ALLOWED_SIGNER_SETTING = "sawtooth.identity.allowed_keys"
+STAKE_NAMESPACE = '807062'
+DEFAULT_PREFIX = '00'
 
 # Constants to be used when constructing config namespace addresses
 _SETTING_NAMESPACE = '000000'
@@ -88,7 +91,7 @@ ALLOWED_SIGNER_ADDRESS = _setting_key_to_address(
 class IdentityTransactionHandler(TransactionHandler):
     @property
     def family_name(self):
-        return 'sawtooth_identity'
+        return 'stake'
 
     @property
     def family_versions(self):
@@ -96,160 +99,35 @@ class IdentityTransactionHandler(TransactionHandler):
 
     @property
     def namespaces(self):
-        return [IDENTITY_NAMESPACE]
+        return [STAKE_NAMESPACE]
 
     def apply(self, transaction, context):
         _check_allowed_transactor(transaction, context)
 
-        payload = IdentityPayload()
+        payload = StakePayload()
         payload.ParseFromString(transaction.payload)
 
         id_type = payload.type
         data = payload.data
 
-        if id_type == IdentityPayload.ROLE:
-            _set_role(data, context)
+        if id_type == StakePayload.SEND:
+            _set_send(data, context)
 
-        elif id_type == IdentityPayload.POLICY:
-            _set_policy(data, context)
+        elif id_type == StakePayload.LOCK:
+            _set_lock(data, context)
 
         else:
-            raise InvalidTransaction("The IdentityType must be either a"
-                                     " ROLE or a POLICY")
+            raise InvalidTransaction("The StakeType must be either a"
+                                     " SEND or LOCK payload")
 
 
-def _check_allowed_transactor(transaction, context):
-    header = transaction.header
-
-    entries_list = _get_data(ALLOWED_SIGNER_ADDRESS, context)
-    if not entries_list:
-        raise InvalidTransaction(
-            "The transaction signer is not authorized to submit transactions: "
-            "{}".format(header.signer_public_key))
-
-    setting = Setting()
-    setting.ParseFromString(entries_list[0].data)
-    for entry in setting.entries:
-        if entry.key == "sawtooth.identity.allowed_keys":
-            allowed_signer = entry.value.split(",")
-            if header.signer_public_key in allowed_signer:
-                return
-
-    raise InvalidTransaction(
-        "The transction signer is not authorized to submit transactions: "
-        "{}".format(header.signer_public_key))
+def _set_send(data, context):
+    raise InvalidTransaction("Every policy entry must have a key.")
 
 
-def _set_policy(data, context):
-    new_policy = Policy()
-    new_policy.ParseFromString(data)
+def _set_lock(data, context):
+    raise InvalidTransaction("The name must be set in a role")
 
-    if not new_policy.entries:
-        raise InvalidTransaction("Atleast one entry must be in a policy.")
-
-    if not new_policy.name:
-        raise InvalidTransaction("The name must be set in a policy.")
-
-    # check entries in the policy
-    for entry in new_policy.entries:
-        if not entry.key:
-            raise InvalidTransaction("Every policy entry must have a key.")
-
-    address = _get_policy_address(new_policy.name)
-    entries_list = _get_data(address, context)
-
-    policy_list = PolicyList()
-    policies = []
-
-    if entries_list != []:
-        policy_list.ParseFromString(entries_list[0].data)
-
-        # sort all roles by using sorted(roles, policy.name)
-        # if a policy with the same name exists, replace that policy
-        policies = [
-            x for x in policy_list.policies if x.name != new_policy.name
-        ]
-        policies.append(new_policy)
-        policies = sorted(policies, key=lambda role: role.name)
-    else:
-        policies.append(new_policy)
-
-    address = _get_policy_address(new_policy.name)
-
-    # Store policy in a PolicyList incase of hash collisions
-    new_policy_list = PolicyList(policies=policies)
-    addresses = context.set_state({
-        address: new_policy_list.SerializeToString()
-    })
-
-    if not addresses:
-        LOGGER.warning('Failed to set policy %s at %s', new_policy.name,
-                       address)
-        raise InternalError('Unable to save policy {}'.format(new_policy.name))
-
-    context.add_event(
-        event_type="identity/update",
-        attributes=[("updated", new_policy.name)])
-    LOGGER.debug("Set policy : \n%s", new_policy)
-
-
-def _set_role(data, context):
-    role = Role()
-    role.ParseFromString(data)
-
-    if not role.name:
-        raise InvalidTransaction("The name must be set in a role")
-    if not role.policy_name:
-        raise InvalidTransaction("A role must contain a policy name.")
-
-    # Check that the policy refernced exists
-    policy_address = _get_policy_address(role.policy_name)
-    entries_list = _get_data(policy_address, context)
-
-    if entries_list == []:
-        raise InvalidTransaction(
-            "Cannot set Role: {}, the Policy: {} is not set.".format(
-                role.name, role.policy_name))
-    else:
-        policy_list = PolicyList()
-        policy_list.ParseFromString(entries_list[0].data)
-        exist = False
-        for policy in policy_list.policies:
-            if policy.name == role.policy_name:
-                exist = True
-                break
-
-        if not exist:
-            raise InvalidTransaction(
-                "Cannot set Role {}, the Policy {} is not set.".format(
-                    role.name, role.policy_name))
-
-    address = _get_role_address(role.name)
-    entries_list = _get_data(address, context)
-
-    # Store role in a Roleist incase of hash collisions
-    role_list = RoleList()
-    if entries_list != []:
-        role_list.ParseFromString(entries_list[0].data)
-
-    # sort all roles by using sorted(roles, Role.name)
-    roles = [x for x in role_list.roles if x.name != role.name]
-    roles.append(role)
-    roles = sorted(roles, key=lambda role: role.name)
-
-    # set RoleList at the address above.
-    addresses = context.set_state({
-        address:
-        RoleList(roles=roles).SerializeToString()
-    })
-
-    if not addresses:
-        LOGGER.warning('Failed to set role %s at %s', role.name, address)
-        raise InternalError('Unable to save role {}'.format(role.name))
-
-    context.add_event(
-        event_type="identity/update", attributes=[("updated", role.name)])
-    LOGGER.debug("Set role: \n%s", role)
 
 
 def _get_data(address, context):

@@ -22,13 +22,11 @@ from sawtooth_identity.protobuf.identity_pb2 import Role
 from sawtooth_identity.protobuf.identity_pb2 import RoleList
 from sawtooth_identity.protobuf.setting_pb2 import Setting
 
-_MAX_KEY_PARTS = 4
-_FIRST_ADDRESS_PART_SIZE = 14
-_ADDRESS_PART_SIZE = 16
-_EMPTY_PART = hashlib.sha256("".encode()).hexdigest()[:_ADDRESS_PART_SIZE]
+_MAX_KEY_PARTS = 2
+_STAKE_TYPE_SIZE = 2
+_ADDRESS_PART_SIZE = 62
 
-_POLICY_PREFIX = '00'
-_ROLE_PREFIX = '01'
+_DEFAULT_TYPE_PREFIX = '00'
 
 LOGGER = logging.getLogger(__name__)
 
@@ -49,22 +47,9 @@ class StakeMessageFactory(object):
     def _to_hash(self, value):
         return hashlib.sha256(value.encode()).hexdigest()
 
-    def _role_to_address(self, role_name):
-        # split the key into 4 parts, maximum
-        key_parts = role_name.split('.', maxsplit=_MAX_KEY_PARTS - 1)
-
-        # compute the short hash of each part
-        addr_parts = [self._to_hash(key_parts[0])[:_FIRST_ADDRESS_PART_SIZE]]
-        addr_parts += [
-            self._to_hash(x)[:_ADDRESS_PART_SIZE] for x in key_parts[1:]
-        ]
-        # pad the parts with the empty hash, if needed
-        addr_parts.extend([_EMPTY_PART] * (_MAX_KEY_PARTS - len(addr_parts)))
-        return self._factory.namespace + _ROLE_PREFIX + ''.join(addr_parts)
-
-    def _policy_to_address(self, policy_name):
-        return self._factory.namespace + _POLICY_PREFIX + \
-            self._to_hash(policy_name)[:62]
+    def _stake_to_address(self, owner_pub):
+        addr_part = self._to_hash(owner_pub)[:_ADDRESS_PART_SIZE]
+        return self._factory.namespace + _DEFAULT_TYPE_PREFIX + addr_part
 
     def create_tp_register(self):
         return self._factory.create_tp_register()

@@ -32,6 +32,7 @@ class TestStake(TransactionProcessorTestCase):
 
     # creates the initial supply
     def _mint_total_supply(self, name, amount):
+        pass
 
     # send a role to be created in state to validator
     def _send(self, name, value):
