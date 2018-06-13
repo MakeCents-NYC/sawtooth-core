@@ -16,8 +16,8 @@ import hashlib
 import logging
 from sawtooth_processor_test.message_factory import MessageFactory
 from sawtooth_identity.protobuf.block_info_pb2 import BlockInfo
-from  sawtooth_identity.protobuf.stake_pb2 import Stake
-from  sawtooth_identity.protobuf.stake_pb2 import StakeList
+from sawtooth_identity.protobuf.stake_pb2 import Stake
+from sawtooth_identity.protobuf.stake_pb2 import StakeList
 from sawtooth_identity.protobuf.stake_payload_pb2 import StakePayload
 from sawtooth_identity.protobuf.stake_payload_pb2 import LockStakeTransactionData
 from sawtooth_identity.protobuf.stake_payload_pb2 import SendStakeTransactionData
@@ -107,63 +107,38 @@ class StakeMessageFactory(object):
         return self._create_tp_process_request(payload)
 
     def create_get_stake_request(self, public_key):
-        addresses = [self._policy_to_address(public_key)]
+        addresses = [self._stake_to_address(public_key)]
         # TODO. parse the entries?
         return self._factory.create_get_request(addresses)
 
     def create_get_stake_response(self, pub_key, map=None):
         address = self._stake_to_address(pub_key)
         if map is not None:
-            stake = map.StakeMap[pub_key]
-            data = stake.SerializeToString()
+            stake = map[pub_key]  # this should be a Stake type, since the map is from pub_key -> stake
+            data = stake.SerializeToString()  # marshall it
         else:
             data = None
         return self._factory.create_get_response({address: data})
 
-    def create_get_role_request(self, name):
-        addresses = [self._role_to_address(name)]
-        return self._factory.create_get_request(addresses)
+    def create_get_lock_info_request(self, pub_key):
+        pass
 
-    def create_get_role_response(self, name, policy_name=None):
-        data = None
-        if policy_name is not None:
-            role = Role(name=name, policy_name=policy_name)
-            role_list = RoleList(roles=[role])
-            data = role_list.SerializeToString()
-        return self._factory.create_get_response({
-            self._role_to_address(name): data})
+    def create_get_lock_info_response(self, pub_key, config=None):
+        pass
 
-    def create_set_policy_request(self, name, rules=None):
-        rules_list = rules.split("\n")
-        entries = []
-        for rule in rules_list:
-            rule = rule.split(" ")
-            if rule[0] == "PERMIT_KEY":
-                entry = Policy.Entry(type=Policy.PERMIT_KEY,
-                                     key=rule[1])
-                entries.append(entry)
-            elif rule[0] == "DENY_KEY":
-                entry = Policy.Entry(type=Policy.DENY_KEY,
-                                     key=rule[1])
-                entries.append(entry)
-        policy = Policy(name=name, entries=entries)
-        policy_list = PolicyList(policies=[policy])
-        return self._factory.create_set_request({
-            self._policy_to_address(name): policy_list.SerializeToString()})
+    def create_set_stake_request(self, to_pub_key, amount=None):
+        # there is a lot more to do here, we need to create someway to update
+        # only specifc stake amounts int he presence of a map.
+        pass
 
-    def create_set_policy_response(self, name):
-        addresses = [self._policy_to_address(name)]
-        return self._factory.create_set_response(addresses)
+    def create_set_stake_response(self, name):
+        pass
 
-    def create_set_role_request(self, name, policy_name):
-        role = Role(name=name, policy_name=policy_name)
-        role_list = RoleList(roles=[role])
-        return self._factory.create_set_request({
-            self._role_to_address(name): role_list.SerializeToString()})
+    def create_set_lock_request(self, name, policy_name):
+        pass
 
-    def create_set_role_response(self, name):
-        addresses = [self._role_to_address(name)]
-        return self._factory.create_set_response(addresses)
+    def create_set_lock_response(self, name):
+        pass
 
     def create_get_setting_request(self, key):
         addresses = [key]
@@ -185,7 +160,7 @@ class StakeMessageFactory(object):
 
     def create_add_event_request(self, key):
         return self._factory.create_add_event_request(
-            "identity/update",
+            "stake/update",
             [("updated", key)])
 
     def create_add_event_response(self):
