@@ -15,11 +15,13 @@
 import hashlib
 import logging
 from sawtooth_processor_test.message_factory import MessageFactory
-from sawtooth_identity.protobuf.identities_pb2 import IdentityPayload
-from sawtooth_identity.protobuf.identity_pb2 import Policy
-from sawtooth_identity.protobuf.identity_pb2 import PolicyList
-from sawtooth_identity.protobuf.identity_pb2 import Role
-from sawtooth_identity.protobuf.identity_pb2 import RoleList
+from sawtooth_identity.protobuf.block_info_pb2 import BlockInfo
+from  sawtooth_identity.protobuf.stake_pb2 import Stake
+from  sawtooth_identity.protobuf.stake_pb2 import StakeList
+from sawtooth_identity.protobuf.stake_payload_pb2 import StakePayload
+from sawtooth_identity.protobuf.stake_payload_pb2 import LockStakeTransactionData
+from sawtooth_identity.protobuf.stake_payload_pb2 import SendStakeTransactionData
+
 from sawtooth_identity.protobuf.setting_pb2 import Setting
 
 _MAX_KEY_PARTS = 2
@@ -47,6 +49,7 @@ class StakeMessageFactory(object):
     def _to_hash(self, value):
         return hashlib.sha256(value.encode()).hexdigest()
 
+    # TODO refactor into key_to_address for clarity
     def _stake_to_address(self, owner_pub):
         addr_part = self._to_hash(owner_pub)[:_ADDRESS_PART_SIZE]
         return self._factory.namespace + _DEFAULT_TYPE_PREFIX + addr_part
@@ -60,73 +63,62 @@ class StakeMessageFactory(object):
     def _create_tp_process_request(self, payload):
         inputs = []
         outputs = []
-        if payload.type == IdentityPayload.ROLE:
-            role = Role()
-            role.ParseFromString(payload.data)
+        if payload.type == StakePayload.SEND:
+            send = SendStakeTransactionData()
+            send.ParseFromString(payload.data)
+            #TODO add block_info
             inputs = [
-                self._role_to_address(role.name),
-                self._policy_to_address(role.policy_name)
+                # the stake address `from`
+                self._stake_to_address(self._factory.get_public_key()),
+                # the stake address `to`
+                self._stake_to_address(send.toPubKey)
             ]
 
-            outputs = [self._role_to_address(role.name)]
+            outputs = [
+                # the stake address `from`
+                self._stake_to_address(self._factory.get_public_key()),
+                # the stake address `to`
+                self._stake_to_address(send.toPubKey)
+            ]
         else:
-            policy = Policy()
-            policy.ParseFromString(payload.data)
-            inputs = [self._policy_to_address(policy.name)]
+            lock = LockStakeTransactionData()
+            lock.ParseFromString(payload.data)
 
-            outputs = [self._role_to_address(policy.name)]
+            inputs = [self._stake_to_address(self._factory.get_public_key())]
+
+            outputs = [self._stake_to_address(self._factory.get_public_key())]
 
         return self._factory.create_tp_process_request(
             payload.SerializeToString(), inputs, outputs, [])
 
-    def create_policy_transaction(self, name, rules):
-        rules_list = rules.split("\n")
-        entries = []
-        for rule in rules_list:
-            rule = rule.split(" ")
-            if rule[0] == "PERMIT_KEY":
-                entry = Policy.Entry(type=Policy.PERMIT_KEY,
-                                     key=rule[1])
-                entries.append(entry)
-            elif rule[0] == "DENY_KEY":
-                entry = Policy.Entry(type=Policy.DENY_KEY,
-                                     key=rule[1])
-                entries.append(entry)
-        policy = Policy(name=name, entries=entries)
-        payload = IdentityPayload(type=IdentityPayload.POLICY,
-                                  data=policy.SerializeToString())
+    def create_send_stake_transaction(self, to_public_key, stake_amount):
+        send = SendStakeTransactionData(toPubKey=to_public_key,
+                                        amount=stake_amount)
+
+        payload = StakePayload(payload_type=StakePayload.SEND,
+                               data=send.SerializeToString())
+
         return self._create_tp_process_request(payload)
 
-    def create_role_transaction(self, name, policy_name):
-        role = Role(name=name, policy_name=policy_name)
-        payload = IdentityPayload(type=IdentityPayload.ROLE,
-                                  data=role.SerializeToString())
+    def create_lock_stake_transaction(self, block_number):
+        lock = LockStakeTransactionData(blockNumber=block_number)
+        payload = StakePayload(payload_type=StakePayload.LOCK,
+                               data=lock.SerializeToString())
         return self._create_tp_process_request(payload)
 
-    def create_get_policy_request(self, name):
-        addresses = [self._policy_to_address(name)]
+    def create_get_stake_request(self, public_key):
+        addresses = [self._policy_to_address(public_key)]
+        # TODO. parse the entries?
         return self._factory.create_get_request(addresses)
 
-    def create_get_policy_response(self, name, rules=None):
-        data = None
-        if rules is not None:
-            rules_list = rules.split("\n")
-            entries = []
-            for rule in rules_list:
-                rule = rule.split(" ")
-                if rule[0] == "PERMIT_KEY":
-                    entry = Policy.Entry(type=Policy.PERMIT_KEY,
-                                         key=rule[0])
-                    entries.append(entry)
-                elif rule[0] == "DENY_KEY":
-                    entry = Policy.Entry(type=Policy.DENY_KEY,
-                                         key=rule[0])
-                    entries.append(entry)
-            policy = Policy(name=name, entries=entries)
-            policy_list = PolicyList(policies=[policy])
-            data = policy_list.SerializeToString()
-        return self._factory.create_get_response(
-            {self._policy_to_address(name): data})
+    def create_get_stake_response(self, pub_key, map=None):
+        address = self._stake_to_address(pub_key)
+        if map is not None:
+            stake = map.StakeMap[pub_key]
+            data = stake.SerializeToString()
+        else:
+            data = None
+        return self._factory.create_get_response({address: data})
 
     def create_get_role_request(self, name):
         addresses = [self._role_to_address(name)]
