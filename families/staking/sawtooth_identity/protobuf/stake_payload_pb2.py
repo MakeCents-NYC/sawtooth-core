@@ -19,7 +19,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   name='stake_payload.proto',
   package='',
   syntax='proto3',
-  serialized_pb=_b('\n\x13stake_payload.proto\"\xc0\x01\n\x0cStakePayload\x12/\n\x0cpayload_type\x18\x01 \x01(\x0e\x32\x19.StakePayload.PayloadType\x12\'\n\x04send\x18\x02 \x01(\x0b\x32\x19.SendStakeTransactionData\x12\'\n\x04lock\x18\x03 \x01(\x0b\x32\x19.LockStakeTransactionData\"-\n\x0bPayloadType\x12\x0e\n\nSEND_STAKE\x10\x00\x12\x0e\n\nLOCK_STAKE\x10\x01\";\n\x18SendStakeTransactionData\x12\x10\n\x08toPubKey\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\t\"/\n\x18LockStakeTransactionData\x12\x13\n\x0b\x62lockNumber\x18\x02 \x01(\x03\x42\x33\n\x1fsawtooth.stake_payload.protobufP\x01Z\x0e\x62lock_info_pb2b\x06proto3')
+  serialized_pb=_b('\n\x13stake_payload.proto\"\xf9\x01\n\x0cStakePayload\x12/\n\x0cpayload_type\x18\x01 \x01(\x0e\x32\x19.StakePayload.PayloadType\x12\'\n\x04send\x18\x02 \x01(\x0b\x32\x19.SendStakeTransactionData\x12\'\n\x04lock\x18\x03 \x01(\x0b\x32\x19.LockStakeTransactionData\x12\'\n\x04mint\x18\x04 \x01(\x0b\x32\x19.MintStakeTransactionData\"=\n\x0bPayloadType\x12\x0e\n\nSEND_STAKE\x10\x00\x12\x0e\n\nLOCK_STAKE\x10\x01\x12\x0e\n\nMINT_STAKE\x10\x02\";\n\x18SendStakeTransactionData\x12\x10\n\x08toPubKey\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\t\"/\n\x18LockStakeTransactionData\x12\x13\n\x0b\x62lockNumber\x18\x01 \x01(\x03\"\x8c\x01\n\x18MintStakeTransactionData\x12\x13\n\x0btotalSupply\x18\x01 \x01(\x02\x12/\n\x03ico\x18\x02 \x03(\x0b\x32\".MintStakeTransactionData.IcoEntry\x1a*\n\x08IcoEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\x02:\x02\x38\x01\x42\x33\n\x1fsawtooth.stake_payload.protobufP\x01Z\x0e\x62lock_info_pb2b\x06proto3')
 )
 
 
@@ -38,11 +38,15 @@ _STAKEPAYLOAD_PAYLOADTYPE = _descriptor.EnumDescriptor(
       name='LOCK_STAKE', index=1, number=1,
       options=None,
       type=None),
+    _descriptor.EnumValueDescriptor(
+      name='MINT_STAKE', index=2, number=2,
+      options=None,
+      type=None),
   ],
   containing_type=None,
   options=None,
-  serialized_start=171,
-  serialized_end=216,
+  serialized_start=212,
+  serialized_end=273,
 )
 _sym_db.RegisterEnumDescriptor(_STAKEPAYLOAD_PAYLOADTYPE)
 
@@ -75,6 +79,13 @@ _STAKEPAYLOAD = _descriptor.Descriptor(
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='mint', full_name='StakePayload.mint', index=3,
+      number=4, type=11, cpp_type=10, label=1,
+      has_default_value=False, default_value=None,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None, file=DESCRIPTOR),
   ],
   extensions=[
   ],
@@ -89,7 +100,7 @@ _STAKEPAYLOAD = _descriptor.Descriptor(
   oneofs=[
   ],
   serialized_start=24,
-  serialized_end=216,
+  serialized_end=273,
 )
 
 
@@ -126,8 +137,8 @@ _SENDSTAKETRANSACTIONDATA = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=218,
-  serialized_end=277,
+  serialized_start=275,
+  serialized_end=334,
 )
 
 
@@ -140,7 +151,7 @@ _LOCKSTAKETRANSACTIONDATA = _descriptor.Descriptor(
   fields=[
     _descriptor.FieldDescriptor(
       name='blockNumber', full_name='LockStakeTransactionData.blockNumber', index=0,
-      number=2, type=3, cpp_type=2, label=1,
+      number=1, type=3, cpp_type=2, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
@@ -157,17 +168,96 @@ _LOCKSTAKETRANSACTIONDATA = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=279,
-  serialized_end=326,
+  serialized_start=336,
+  serialized_end=383,
+)
+
+
+_MINTSTAKETRANSACTIONDATA_ICOENTRY = _descriptor.Descriptor(
+  name='IcoEntry',
+  full_name='MintStakeTransactionData.IcoEntry',
+  filename=None,
+  file=DESCRIPTOR,
+  containing_type=None,
+  fields=[
+    _descriptor.FieldDescriptor(
+      name='key', full_name='MintStakeTransactionData.IcoEntry.key', index=0,
+      number=1, type=9, cpp_type=9, label=1,
+      has_default_value=False, default_value=_b("").decode('utf-8'),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='value', full_name='MintStakeTransactionData.IcoEntry.value', index=1,
+      number=2, type=2, cpp_type=6, label=1,
+      has_default_value=False, default_value=float(0),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None, file=DESCRIPTOR),
+  ],
+  extensions=[
+  ],
+  nested_types=[],
+  enum_types=[
+  ],
+  options=_descriptor._ParseOptions(descriptor_pb2.MessageOptions(), _b('8\001')),
+  is_extendable=False,
+  syntax='proto3',
+  extension_ranges=[],
+  oneofs=[
+  ],
+  serialized_start=484,
+  serialized_end=526,
+)
+
+_MINTSTAKETRANSACTIONDATA = _descriptor.Descriptor(
+  name='MintStakeTransactionData',
+  full_name='MintStakeTransactionData',
+  filename=None,
+  file=DESCRIPTOR,
+  containing_type=None,
+  fields=[
+    _descriptor.FieldDescriptor(
+      name='totalSupply', full_name='MintStakeTransactionData.totalSupply', index=0,
+      number=1, type=2, cpp_type=6, label=1,
+      has_default_value=False, default_value=float(0),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='ico', full_name='MintStakeTransactionData.ico', index=1,
+      number=2, type=11, cpp_type=10, label=3,
+      has_default_value=False, default_value=[],
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None, file=DESCRIPTOR),
+  ],
+  extensions=[
+  ],
+  nested_types=[_MINTSTAKETRANSACTIONDATA_ICOENTRY, ],
+  enum_types=[
+  ],
+  options=None,
+  is_extendable=False,
+  syntax='proto3',
+  extension_ranges=[],
+  oneofs=[
+  ],
+  serialized_start=386,
+  serialized_end=526,
 )
 
 _STAKEPAYLOAD.fields_by_name['payload_type'].enum_type = _STAKEPAYLOAD_PAYLOADTYPE
 _STAKEPAYLOAD.fields_by_name['send'].message_type = _SENDSTAKETRANSACTIONDATA
 _STAKEPAYLOAD.fields_by_name['lock'].message_type = _LOCKSTAKETRANSACTIONDATA
+_STAKEPAYLOAD.fields_by_name['mint'].message_type = _MINTSTAKETRANSACTIONDATA
 _STAKEPAYLOAD_PAYLOADTYPE.containing_type = _STAKEPAYLOAD
+_MINTSTAKETRANSACTIONDATA_ICOENTRY.containing_type = _MINTSTAKETRANSACTIONDATA
+_MINTSTAKETRANSACTIONDATA.fields_by_name['ico'].message_type = _MINTSTAKETRANSACTIONDATA_ICOENTRY
 DESCRIPTOR.message_types_by_name['StakePayload'] = _STAKEPAYLOAD
 DESCRIPTOR.message_types_by_name['SendStakeTransactionData'] = _SENDSTAKETRANSACTIONDATA
 DESCRIPTOR.message_types_by_name['LockStakeTransactionData'] = _LOCKSTAKETRANSACTIONDATA
+DESCRIPTOR.message_types_by_name['MintStakeTransactionData'] = _MINTSTAKETRANSACTIONDATA
 _sym_db.RegisterFileDescriptor(DESCRIPTOR)
 
 StakePayload = _reflection.GeneratedProtocolMessageType('StakePayload', (_message.Message,), dict(
@@ -191,7 +281,24 @@ LockStakeTransactionData = _reflection.GeneratedProtocolMessageType('LockStakeTr
   ))
 _sym_db.RegisterMessage(LockStakeTransactionData)
 
+MintStakeTransactionData = _reflection.GeneratedProtocolMessageType('MintStakeTransactionData', (_message.Message,), dict(
+
+  IcoEntry = _reflection.GeneratedProtocolMessageType('IcoEntry', (_message.Message,), dict(
+    DESCRIPTOR = _MINTSTAKETRANSACTIONDATA_ICOENTRY,
+    __module__ = 'stake_payload_pb2'
+    # @@protoc_insertion_point(class_scope:MintStakeTransactionData.IcoEntry)
+    ))
+  ,
+  DESCRIPTOR = _MINTSTAKETRANSACTIONDATA,
+  __module__ = 'stake_payload_pb2'
+  # @@protoc_insertion_point(class_scope:MintStakeTransactionData)
+  ))
+_sym_db.RegisterMessage(MintStakeTransactionData)
+_sym_db.RegisterMessage(MintStakeTransactionData.IcoEntry)
+
 
 DESCRIPTOR.has_options = True
 DESCRIPTOR._options = _descriptor._ParseOptions(descriptor_pb2.FileOptions(), _b('\n\037sawtooth.stake_payload.protobufP\001Z\016block_info_pb2'))
+_MINTSTAKETRANSACTIONDATA_ICOENTRY.has_options = True
+_MINTSTAKETRANSACTIONDATA_ICOENTRY._options = _descriptor._ParseOptions(descriptor_pb2.MessageOptions(), _b('8\001'))
 # @@protoc_insertion_point(module_scope)

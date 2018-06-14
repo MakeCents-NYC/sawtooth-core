@@ -13,12 +13,14 @@ message StakePayload {
     enum PayloadType {
         SEND_STAKE = 0;
         LOCK_STAKE = 1;
+        MINT_STAKE = 2;
     }
 
     //The type from above
     PayloadType payload_type = 1;
     SendStakeTransactionData send = 2;
-    LockStakeTransactionData lock =3;
+    LockStakeTransactionData lock = 3;
+    MintStakeTransactionData mint = 4;
 }
 
 message SendStakeTransactionData {
@@ -27,5 +29,10 @@ message SendStakeTransactionData {
 }
 
 message LockStakeTransactionData {
-    int64 blockNumber = 2;
+    int64 blockNumber = 1;
+}
+
+message MintStakeTransactionData {
+    float totalSupply = 1;
+    map<string, float> ico = 2;
 }

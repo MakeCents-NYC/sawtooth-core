@@ -19,6 +19,7 @@ from sawtooth_identity_test.stake_message_factory \
 from sawtooth_processor_test.transaction_processor_test_case \
     import TransactionProcessorTestCase
 
+
 class TestStake(TransactionProcessorTestCase):
 
     @classmethod
@@ -31,8 +32,11 @@ class TestStake(TransactionProcessorTestCase):
         pass
 
     # creates the initial supply
-    def _mint_total_supply(self, name, amount):
-        pass
+    def _mint(self, **key_stake_map):
+        _ico={self._factory.get_public_key(): 100}
+        self.validator.send(self.factory.create_mint_stake_transaction(
+            total_supply=100,
+            ico=_ico))
 
     # send a role to be created in state to validator
     def _send(self, name, value):
@@ -105,7 +109,6 @@ class TestStake(TransactionProcessorTestCase):
         return an invalid transaction.
         """
         self._expect_invalid_transaction()
-
 
     # Admissible but perhaps not desired?
     def test_send_stake_without_name(self):

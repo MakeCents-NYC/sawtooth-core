@@ -21,6 +21,7 @@ from sawtooth_identity.protobuf.stake_pb2 import StakeList
 from sawtooth_identity.protobuf.stake_payload_pb2 import StakePayload
 from sawtooth_identity.protobuf.stake_payload_pb2 import LockStakeTransactionData
 from sawtooth_identity.protobuf.stake_payload_pb2 import SendStakeTransactionData
+from sawtooth_identity.protobuf.stake_payload_pb2 import MintStakeTransactionData
 
 from sawtooth_identity.protobuf.setting_pb2 import Setting
 
@@ -80,7 +81,7 @@ class StakeMessageFactory(object):
                 # the stake address `to`
                 self._stake_to_address(send.toPubKey)
             ]
-        else:
+        elif payload.type == StakePayload.LOCK:
             lock = LockStakeTransactionData()
             lock.ParseFromString(payload.data)
 
@@ -88,23 +89,38 @@ class StakeMessageFactory(object):
 
             outputs = [self._stake_to_address(self._factory.get_public_key())]
 
+        else:
+            mint = MintStakeTransactionData()
+            mint.ParseFromString(payload.data)
+            inputs = [
+                # setting address of allowed key
+            ]
+
+            outputs = [
+
+            # for each name in list, calculate output address.
+            ]
+
         return self._factory.create_tp_process_request(
             payload.SerializeToString(), inputs, outputs, [])
 
-    def create_send_stake_transaction(self, to_public_key, stake_amount):
-        send = SendStakeTransactionData(toPubKey=to_public_key,
-                                        amount=stake_amount)
 
-        payload = StakePayload(payload_type=StakePayload.SEND,
-                               data=send.SerializeToString())
 
-        return self._create_tp_process_request(payload)
+    def create_mint_stake_transaction(self, total_supply, **ico):
+        mint = MintStakeTransactionData(total_supply=100,
+                                        ico=ico)
+        payload = StakePayload(payload_type=StakePayload.MINT,
+                               data=mint.SerializeToString())
 
-    def create_lock_stake_transaction(self, block_number):
-        lock = LockStakeTransactionData(blockNumber=block_number)
-        payload = StakePayload(payload_type=StakePayload.LOCK,
-                               data=lock.SerializeToString())
-        return self._create_tp_process_request(payload)
+    def create_mint_stake_request(self, to_pub_key, total_supply=None, **ico):
+        # there is a lot more to do here, we need to create someway to update
+        # only specifc stake amounts int he presence of a map.
+
+        #
+        pass
+
+    def create_mint_stake_response(self, name):
+        pass
 
     def create_get_stake_request(self, public_key):
         addresses = [self._stake_to_address(public_key)]
@@ -114,21 +130,18 @@ class StakeMessageFactory(object):
     def create_get_stake_response(self, pub_key, map=None):
         address = self._stake_to_address(pub_key)
         if map is not None:
-            stake = map[pub_key]  # this should be a Stake type, since the map is from pub_key -> stake
+            stake_addresses = StakeList(map)  # this should be a Stake type, since the map is from pub_key -> stake
+            stake = Stake(stake_addresses[pub_key])
             data = stake.SerializeToString()  # marshall it
         else:
             data = None
         return self._factory.create_get_response({address: data})
 
-    def create_get_lock_info_request(self, pub_key):
-        pass
-
-    def create_get_lock_info_response(self, pub_key, config=None):
-        pass
-
-    def create_set_stake_request(self, to_pub_key, amount=None):
+    def create_set_stake_request(self, to_pub_key, amount=None, stake_map=None):
         # there is a lot more to do here, we need to create someway to update
         # only specifc stake amounts int he presence of a map.
+
+        #
         pass
 
     def create_set_stake_response(self, name):
@@ -165,3 +178,28 @@ class StakeMessageFactory(object):
 
     def create_add_event_response(self):
         return self._factory.create_add_event_response()
+
+
+
+
+
+    # def create_send_stake_transaction(self, to_public_key, stake_amount):
+    #     send = SendStakeTransactionData(toPubKey=to_public_key,
+    #                                     amount=stake_amount)
+    #
+    #     payload = StakePayload(payload_type=StakePayload.SEND,
+    #                            data=send.SerializeToString())
+    #
+    #     return self._create_tp_process_request(payload)
+    #
+    # def create_lock_stake_transaction(self, block_number):
+    #     lock = LockStakeTransactionData(blockNumber=block_number)
+    #     payload = StakePayload(payload_type=StakePayload.LOCK,
+    #                            data=lock.SerializeToString())
+    #     return self._create_tp_process_request(payload)
+    #
+    # def create_get_lock_stake_request(self, pub_key):
+    #     pass
+    #
+    # def create_get_lock_stake_response(self, pub_key, config=None):
+    #     pass
