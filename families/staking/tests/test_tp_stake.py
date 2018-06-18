@@ -19,6 +19,8 @@ from sawtooth_identity_test.stake_message_factory \
 from sawtooth_processor_test.transaction_processor_test_case \
     import TransactionProcessorTestCase
 
+MINT_KEY_ADDRESS = '000000a87cb5eafdcca6a8f4caf4ff95731a23f91e6901b1da081ee3b0c44298fc1c14'
+
 
 class TestStake(TransactionProcessorTestCase):
 

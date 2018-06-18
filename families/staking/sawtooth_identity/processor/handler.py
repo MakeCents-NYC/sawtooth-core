@@ -24,8 +24,6 @@ from sawtooth_sdk.processor.exceptions import InternalError
 from sawtooth_sdk.protobuf.setting_pb2 import Setting
 
 from sawtooth_identity.protobuf.block_info_pb2 import BlockInfoConfig
-from sawtooth_identity.protobuf.setting_pb2 import Setting
-
 
 from sawtooth_identity.protobuf.stake_pb2 import Stake
 from sawtooth_identity.protobuf.stake_pb2 import StakeList
@@ -103,7 +101,6 @@ def create_block_address(block_num):
 
 
 def _check_block_number(block_config_data, context):
-    header = transaction.header
 
     block_config = _get_data(BLOCK_CONFIG_ADDRESS, context)
     if not block_config:
@@ -114,7 +111,8 @@ def _check_block_number(block_config_data, context):
 
     block_config = BlockInfoConfig()
     block_config.ParseFromString()
-    return block_config.
+    return block_config.latest_block
+
 
 class IdentityTransactionHandler(TransactionHandler):
     @property
@@ -130,21 +128,22 @@ class IdentityTransactionHandler(TransactionHandler):
         return [STAKE_NAMESPACE]
 
     def apply(self, transaction, context):
+        header = transaction.header
+        signer = header.signer_public_key
         # parse the payload
         payload = StakePayload()
         payload.ParseFromString(transaction.payload)
 
-        id_type = payload.type
-        data = payload.data
+        id_type = payload.payload_type
 
-        if id_type == StakePayload.SEND:
-            _set_send(data, context)
+        if id_type == StakePayload.SEND_STAKE:
+            _set_send(payload.send, context)
 
-        elif id_type == StakePayload.LOCK:
-            _set_lock(data, context)
+        elif id_type == StakePayload.LOCK_STAKE:
+            _set_lock(payload.lock, context)
 
-        elif id_type == StakePayload.MINT:
-            _apply_mint(data, context)
+        elif id_type == StakePayload.MINT_STAKE:
+            _apply_mint(payload.mint, context, signer)
 
         else:
             raise InvalidTransaction("The StakeType must be either a"
@@ -177,7 +176,7 @@ def _apply_mint(data, context, public_key):
 
     # generate the stake we are going to store 
     stake_list = StakeList()
-    stake_list.stakeMap[public_key] = init_stake.SerializeToString()
+    stake_list.stakeMap[public_key] = init_stake
 
     # calculate the address to write to
     address = _stake_key_to_address(public_key)
@@ -204,7 +203,7 @@ def _set_data(context, **address_dict):
     """
     try:
         context.set_state(address_dict, timeout=STATE_TIMEOUT_SEC)
-    except FutureTimeoutError
+    except FutureTimeoutError:
         LOGGER.warning('Timeout occured on context.set_state({}').format(address_dict)
         raise InternalError('Unable to set {}').format(address_dict)
 

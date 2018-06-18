@@ -20,19 +20,19 @@ services:
   identity-tp:
     build:
       context: ../../..
-      dockerfile: ./families/staking/Dockerfile
+      dockerfile: ./families/identity/Dockerfile
     image: sawtooth-identity-tp$INSTALL_TYPE:$ISOLATION_ID
     volumes:
       - $SAWTOOTH_CORE:/project/sawtooth-core
     expose:
       - 4004
-    command: identity-tp -vv -C tcp://test-tp-identity:4004
+    command: stake-tp -vv -C tcp://test-tp-identity:4004
     stop_signal: SIGKILL
 
   test-tp-identity:
     build:
       context: ../../..
-      dockerfile: families/staking/tests/identity-tests.dockerfile
+      dockerfile: families/identity/tests/identity-tests.dockerfile
     image: identity-tests:$ISOLATION_ID
     volumes:
       - $SAWTOOTH_CORE:/project/sawtooth-core
