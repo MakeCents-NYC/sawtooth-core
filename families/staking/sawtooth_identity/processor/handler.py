@@ -30,12 +30,20 @@ from sawtooth_identity.protobuf.setting_pb2 import Setting
 from sawtooth_identity.protobuf.stake_pb2 import Stake
 from sawtooth_identity.protobuf.stake_pb2 import StakeList
 from sawtooth_identity.protobuf.stake_payload_pb2 import StakePayload
+from sawtooth_identity.protobuf.stake_payload_pb2 import MintStakeTransactionData
+from sawtooth_identity.protobuf.stake_payload_pb2 import SendStakeTransactionData
+from sawtooth_identity.protobuf.stake_payload_pb2 import LockStakeTransactionData
 
 LOGGER = logging.getLogger(__name__)
 
 # The identity namespace is special: it is not derived from a hash.
 STAKE_NAMESPACE = '807062'
 DEFAULT_PREFIX = '00'
+
+def _stake_key_to_address(key):
+    # assumes key is hex
+    return STAKE_NAMESPACE + DEFAULT_PREFIX + hashlib.sha256(key.encode('utf-8')).hexdigest()
+
 
 # Constants to be used when constructing config namespace addresses
 _SETTING_NAMESPACE = '000000'
@@ -85,28 +93,6 @@ _SETTING_ADDRESS_PADDING = _setting_short_hash(byte_str=b'')
 ALLOWED_SIGNER_ADDRESS = _setting_key_to_address(
     "sawtooth.stake.allowed_keys")
 
-
-def _check_allowed_minter(transaction, context):
-    header = transaction.header
-
-    entries_list = _get_data(ALLOWED_SIGNER_ADDRESS, context)
-    if not entries_list:
-        raise InvalidTransaction(
-            "The transaction signer is not authorized to submit transactions: "
-            "{}".format(header.signer_public_key))
-
-    setting = Setting()
-    setting.ParseFromString(entries_list[0].data)
-    for entry in setting.entries:
-        if entry.key == "sawtooth.stake.allowed_keys":
-            allowed_signer = entry.value.split(",")
-            if header.signer_public_key in allowed_signer:
-                return
-
-    raise InvalidTransaction(
-        "The transction signer is not authorized to submit transactions: "
-        "{}".format(header.signer_public_key))
-
 NAMESPACE = '00b10c'
 BLOCK_INFO_NAMESPACE = NAMESPACE + '00'
 BLOCK_CONFIG_ADDRESS = NAMESPACE + '01' + '0' * 62
@@ -116,7 +102,7 @@ def create_block_address(block_num):
     return BLOCK_INFO_NAMESPACE + hex(block_num)[2:].zfill(62)
 
 
-def _check_block_number(transaction, context):
+def _check_block_number(block_config_data, context):
     header = transaction.header
 
     block_config = _get_data(BLOCK_CONFIG_ADDRESS, context)
@@ -128,9 +114,7 @@ def _check_block_number(transaction, context):
 
     block_config = BlockInfoConfig()
     block_config.ParseFromString()
-    if block_config.latest_block != 1:
-        raise InvalidTransaction(
-            "This is not the genesis block, and no coins may be minted.")
+    return block_config.
 
 class IdentityTransactionHandler(TransactionHandler):
     @property
@@ -160,14 +144,14 @@ class IdentityTransactionHandler(TransactionHandler):
             _set_lock(data, context)
 
         elif id_type == StakePayload.MINT:
-            _set_mint(data, context)
+            _apply_mint(data, context)
 
         else:
             raise InvalidTransaction("The StakeType must be either a"
                                      " MINT, SEND, or LOCK payload")
 
 
-def _set_mint(data, context):
+def _apply_mint(data, context, public_key):
     """
     The _set_mint function is used to initialize the staking tp.
     It requires that a public key be set in the transaction
@@ -176,21 +160,53 @@ def _set_mint(data, context):
     :param context: The connection information to the validator
     :return: ok
     """
-    #make sure this is only called once.
-    #build the maps
-    #
+
+    minter = _get_data(ALLOWED_SIGNER_ADDRESS, context)
+    if minter != public_key:
+        raise InvalidTransaction("The signer dees not match the minter address")
+    # construct the minting payload
+    minting_payload = MintStakeTransactionData()
+    minting_payload.ParseFromString(data)
+
+    total_supply = minting_payload.totalSupply
+    
+    # TODO: parse the ICO list / map
+    # for now we assign all the money to the signer.
+    init_stake = Stake(nonce=1, ownerPubKey=public_key, value=total_supply, blockNumber=1)
 
 
+    # generate the stake we are going to store 
+    stake_list = StakeList()
+    stake_list.stakeMap[public_key] = init_stake.SerializeToString()
 
-    pass
+    # calculate the address to write to
+    address = _stake_key_to_address(public_key)
+
+    # submit the state to update to the validator
+    ico_data = {address: stake_list.SerializeToString()}
+    _set_data(context, **ico_data)
+
 
 def _set_send(data, context):
-    raise InvalidTransaction("Every policy entry must have a key.")
+    raise NotImplementedError()
 
 
 def _set_lock(data, context):
-    raise InvalidTransaction("The name must be set in a role")
+    raise NotImplementedError
 
+
+def _set_data(context, **address_dict):
+    """
+    This function is used to set state by submitting requests to the validator.
+    :arg context: The connection information with the validaor
+    :arg address_dict: a dictionary of state addresses to be updated where the
+        keys are the addressess and the value is the serialized protobuf data.
+    """
+    try:
+        context.set_state(address_dict, timeout=STATE_TIMEOUT_SEC)
+    except FutureTimeoutError
+        LOGGER.warning('Timeout occured on context.set_state({}').format(address_dict)
+        raise InternalError('Unable to set {}').format(address_dict)
 
 
 def _get_data(address, context):
@@ -208,28 +224,6 @@ def _to_hash(value):
     return hashlib.sha256(value.encode()).hexdigest()
 
 
-def _get_policy_address(policy_name):
-    return IDENTITY_NAMESPACE + POLICY_PREFIX + _to_hash(policy_name)[:62]
-
-def _get_stake_address(self, owner_pub):
-    addr_part = self._to_hash(owner_pub)[:_ADDRESS_PART_SIZE]
-    return self._factory.namespace + _DEFAULT_TYPE_PREFIX + addr_part
-
-_MAX_KEY_PARTS = 4
-_FIRST_ADDRESS_PART_SIZE = 14
-_ADDRESS_PART_SIZE = 16
-_EMPTY_PART = _to_hash('')[:_ADDRESS_PART_SIZE]
 
 
-def _get_role_address(role_name):
-    # split the key into 4 parts, maximum
-    key_parts = role_name.split('.', maxsplit=_MAX_KEY_PARTS - 1)
 
-    # compute the short hash of each part
-    addr_parts = [_to_hash(key_parts[0])[:_FIRST_ADDRESS_PART_SIZE]]
-    addr_parts += [_to_hash(x)[:_ADDRESS_PART_SIZE] for x in key_parts[1:]]
-
-    # pad the parts with the empty hash, if needed
-    addr_parts.extend([_EMPTY_PART] * (_MAX_KEY_PARTS - len(addr_parts)))
-
-    return IDENTITY_NAMESPACE + ROLE_PREFIX + ''.join(addr_parts)

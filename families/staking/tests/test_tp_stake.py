@@ -32,11 +32,8 @@ class TestStake(TransactionProcessorTestCase):
         pass
 
     # creates the initial supply
-    def _mint(self, **key_stake_map):
-        _ico={self._factory.get_public_key(): 100}
-        self.validator.send(self.factory.create_mint_stake_transaction(
-            total_supply=100,
-            ico=_ico))
+    def _mint(self):
+        self.validator.send(self.factory.create_mint_stake_transaction(100.0, self._public_key))
 
     # send a role to be created in state to validator
     def _send(self, name, value):
@@ -81,63 +78,64 @@ class TestStake(TransactionProcessorTestCase):
         """
         Tests initializing the total supply
         """
+        self._mint()
         self._expect_ok()
 
-    def test_send_stake(self):
-        """
-        Tests sending some stake
-        """
-        self._expect_ok()
-
-    def test_send_with_bad_signer(self):
-        self._expect_invalid_transaction()
-
-    def test_send_without_value(self):
-        self._expect_invalid_transaction()
-
-    def test_send_stake_that_dne(self):
-        """
-        Tests sending stake from an address that is empty.
-        This should return an invalid transaction.
-        """
-        self._expect_invalid_transaction()
-
-    def test_send_stake_not_owned(self):
-        """
-        Tests sending stake from an address that exists, but does
-        not match the signing key of this transaction. This should
-        return an invalid transaction.
-        """
-        self._expect_invalid_transaction()
-
-    # Admissible but perhaps not desired?
-    def test_send_stake_without_name(self):
-        """
-        Tests send stake to a name that doesnt exist
-        """
-        self._expect_invalid_transaction()
-
-    def test_lock_stake(self):
-        """
-        Tests locking the stake.
-        """
-        self._expect_ok()
-
-    def test_lock_stake_that_dne(self):
-        """
-        Tests locking stake that does not exist.
-        """
-        self._expect_invalid_transaction()
-
-    def test_lock_stake_not_owned(self):
-        """
-        Tests locking someone else's stake
-        """
-        self._expect_invalid_transaction()
-
-    # Should this be allowed?
-    def test_lock_stake_that_is_already_locked(self):
-        """
-        Tests locking stake that is already locked.
-        """
-        self._expect_invalid_transaction()
+    # def test_send_stake(self):
+    #     """
+    #     Tests sending some stake
+    #     """
+    #     self._expect_ok()
+    #
+    # def test_send_with_bad_signer(self):
+    #     self._expect_invalid_transaction()
+    #
+    # def test_send_without_value(self):
+    #     self._expect_invalid_transaction()
+    #
+    # def test_send_stake_that_dne(self):
+    #     """
+    #     Tests sending stake from an address that is empty.
+    #     This should return an invalid transaction.
+    #     """
+    #     self._expect_invalid_transaction()
+    #
+    # def test_send_stake_not_owned(self):
+    #     """
+    #     Tests sending stake from an address that exists, but does
+    #     not match the signing key of this transaction. This should
+    #     return an invalid transaction.
+    #     """
+    #     self._expect_invalid_transaction()
+    #
+    # # Admissible but perhaps not desired?
+    # def test_send_stake_without_name(self):
+    #     """
+    #     Tests send stake to a name that doesnt exist
+    #     """
+    #     self._expect_invalid_transaction()
+    #
+    # def test_lock_stake(self):
+    #     """
+    #     Tests locking the stake.
+    #     """
+    #     self._expect_ok()
+    #
+    # def test_lock_stake_that_dne(self):
+    #     """
+    #     Tests locking stake that does not exist.
+    #     """
+    #     self._expect_invalid_transaction()
+    #
+    # def test_lock_stake_not_owned(self):
+    #     """
+    #     Tests locking someone else's stake
+    #     """
+    #     self._expect_invalid_transaction()
+    #
+    # # Should this be allowed?
+    # def test_lock_stake_that_is_already_locked(self):
+    #     """
+    #     Tests locking stake that is already locked.
+    #     """
+    #     self._expect_invalid_transaction()

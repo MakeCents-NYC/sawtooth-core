@@ -64,7 +64,7 @@ class StakeMessageFactory(object):
     def _create_tp_process_request(self, payload):
         inputs = []
         outputs = []
-        if payload.type == StakePayload.SEND:
+        if payload.payload_type == StakePayload.SEND_STAKE:
             send = SendStakeTransactionData()
             send.ParseFromString(payload.data)
             #TODO add block_info
@@ -74,53 +74,53 @@ class StakeMessageFactory(object):
                 # the stake address `to`
                 self._stake_to_address(send.toPubKey)
             ]
-
             outputs = [
                 # the stake address `from`
                 self._stake_to_address(self._factory.get_public_key()),
                 # the stake address `to`
                 self._stake_to_address(send.toPubKey)
             ]
-        elif payload.type == StakePayload.LOCK:
+        elif payload.payload_type == StakePayload.LOCK_STAKE:
             lock = LockStakeTransactionData()
             lock.ParseFromString(payload.data)
-
             inputs = [self._stake_to_address(self._factory.get_public_key())]
-
             outputs = [self._stake_to_address(self._factory.get_public_key())]
 
+        # MINT_STAKE
         else:
             mint = MintStakeTransactionData()
-            mint.ParseFromString(payload.data)
-            inputs = [
-                # setting address of allowed key
-            ]
-
-            outputs = [
-
-            # for each name in list, calculate output address.
-            ]
+            # Extract the payload from create_mint_stake_transaction
+            mint = payload.mint
+            inputs = [self._stake_to_address(self._factory.get_public_key())]
+            outputs = [self._stake_to_address(self._factory.get_public_key())]
 
         return self._factory.create_tp_process_request(
             payload.SerializeToString(), inputs, outputs, [])
 
+    def create_mint_stake_transaction(self, total_supply: float, mint_key: str):
+        mint = MintStakeTransactionData()
+        mint.totalSupply = total_supply
+        mint.ico[mint_key] = total_supply
 
+        payload = StakePayload(payload_type=StakePayload.MINT_STAKE,
+                               mint=mint)
+        return self._create_tp_process_request(payload)
 
-    def create_mint_stake_transaction(self, total_supply, **ico):
-        mint = MintStakeTransactionData(total_supply=100,
-                                        ico=ico)
-        payload = StakePayload(payload_type=StakePayload.MINT,
-                               data=mint.SerializeToString())
-
-    def create_mint_stake_request(self, to_pub_key, total_supply=None, **ico):
+    def create_mint_stake_request(self, total_supply, mint_key):
         # there is a lot more to do here, we need to create someway to update
         # only specifc stake amounts int he presence of a map.
+        txn = self.create_mint_stake_transaction(total_supply, mint_key)
 
-        #
-        pass
+    def create_set_stake_request(self, owner_pub_Key, value):
+        stake = Stake(ownerPubKey=owner_pub_Key, value=value, nonce=1)
+        stake_list = StakeList()
+        stake_list.stakeMap[owner_pub_Key] = stake
+        return self._factory.create_set_request({
+            self._stake_to_address(owner_pub_Key): stake_list.SerializeToString()})
 
     def create_mint_stake_response(self, name):
-        pass
+        stake_addr = [self._stake_to_address(name)]
+        return self._factory.create_set_response(stake_addr)
 
     def create_get_stake_request(self, public_key):
         addresses = [self._stake_to_address(public_key)]
@@ -136,16 +136,6 @@ class StakeMessageFactory(object):
         else:
             data = None
         return self._factory.create_get_response({address: data})
-
-    def create_set_stake_request(self, to_pub_key, amount=None, stake_map=None):
-        # there is a lot more to do here, we need to create someway to update
-        # only specifc stake amounts int he presence of a map.
-
-        #
-        pass
-
-    def create_set_stake_response(self, name):
-        pass
 
     def create_set_lock_request(self, name, policy_name):
         pass
