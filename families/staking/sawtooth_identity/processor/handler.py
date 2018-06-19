@@ -36,12 +36,13 @@ LOGGER = logging.getLogger(__name__)
 
 # The identity namespace is special: it is not derived from a hash.
 STAKE_NAMESPACE = '807062'
-DEFAULT_PREFIX = '00'
+_DEFAULT_TYPE_PREFIX = '00'
+_ADDRESS_PART_SIZE = 62
 
-def _stake_key_to_address(key):
-    # assumes key is hex
-    return STAKE_NAMESPACE + DEFAULT_PREFIX + hashlib.sha256(key.encode('utf-8')).hexdigest()
 
+def _stake_to_address(owner_pub):
+    addr_part = _to_hash(owner_pub)[:_ADDRESS_PART_SIZE]
+    return STAKE_NAMESPACE + _DEFAULT_TYPE_PREFIX + addr_part
 
 # Constants to be used when constructing config namespace addresses
 _SETTING_NAMESPACE = '000000'
@@ -49,7 +50,6 @@ _SETTING_MAX_KEY_PARTS = 4
 _SETTING_ADDRESS_PART_SIZE = 16
 # Number of seconds to wait for state operations to succeed
 STATE_TIMEOUT_SEC = 10
-
 
 
 def _setting_key_to_address(key):
@@ -114,6 +114,26 @@ def _check_block_number(block_config_data, context):
     return block_config.latest_block
 
 
+def _check_allowed_minter(minting_key, context):
+    entries_list = _get_data(ALLOWED_SIGNER_ADDRESS, context)
+    if not entries_list:
+        raise InvalidTransaction(
+            "The transaction signer is not authorized to submit transactions: "
+            "{}".format(minting_key))
+
+    setting = Setting()
+    setting.ParseFromString(entries_list[0].data)
+    for entry in setting.entries:
+        if entry.key == "sawtooth.stake.allowed_keys":
+            allowed_signer = entry.value.split(",")
+            if minting_key in allowed_signer:
+                return
+
+    raise InvalidTransaction(
+        "The transction signer is not authorized mint stake tokens: "
+        "{}".format(minting_key))
+
+
 class IdentityTransactionHandler(TransactionHandler):
     @property
     def family_name(self):
@@ -150,7 +170,7 @@ class IdentityTransactionHandler(TransactionHandler):
                                      " MINT, SEND, or LOCK payload")
 
 
-def _apply_mint(data, context, public_key):
+def _apply_mint(minting_payload, context, public_key):
     """
     The _set_mint function is used to initialize the staking tp.
     It requires that a public key be set in the transaction
@@ -159,27 +179,19 @@ def _apply_mint(data, context, public_key):
     :param context: The connection information to the validator
     :return: ok
     """
-
-    minter = _get_data(ALLOWED_SIGNER_ADDRESS, context)
-    if minter != public_key:
-        raise InvalidTransaction("The signer dees not match the minter address")
-    # construct the minting payload
-    minting_payload = MintStakeTransactionData()
-    minting_payload.ParseFromString(data)
-
+    _check_allowed_minter(public_key, context)
     total_supply = minting_payload.totalSupply
-    
-    # TODO: parse the ICO list / map
-    # for now we assign all the money to the signer.
-    init_stake = Stake(nonce=1, ownerPubKey=public_key, value=total_supply, blockNumber=1)
 
-
-    # generate the stake we are going to store 
     stake_list = StakeList()
-    stake_list.stakeMap[public_key] = init_stake
+    stake_list.stakeMap.get_or_create(public_key)
+
+    stake_list.stakeMap[public_key].nonce = 1
+    stake_list.stakeMap[public_key].ownerPubKey = public_key
+    stake_list.stakeMap[public_key].value = total_supply
+    stake_list.stakeMap[public_key].value = 1
 
     # calculate the address to write to
-    address = _stake_key_to_address(public_key)
+    address = _stake_to_address(public_key)
 
     # submit the state to update to the validator
     ico_data = {address: stake_list.SerializeToString()}

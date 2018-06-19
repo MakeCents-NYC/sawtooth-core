@@ -33,6 +33,14 @@ class TestStake(TransactionProcessorTestCase):
     def _expect_stake_get(self, key, allowed=True):
         pass
 
+    def _expect_stake_set(self, total_supply, public_key):
+        recieved = self.validator.expect(
+            self.factory.create_mint_stake_request(total_supply, public_key))
+
+        self.validator.respond(
+            self.factory.create_mint_stake_response(public_key),
+            recieved)
+
     # creates the initial supply
     def _mint(self):
         self.validator.send(self.factory.create_mint_stake_transaction(100.0, self._public_key))
@@ -78,9 +86,12 @@ class TestStake(TransactionProcessorTestCase):
 
     def test_mint_total_supply(self):
         """
-        Tests initializing the total supply
+        Tests initializing the total supply, it checks the minting
+        key address to see if the signer of the transaction is correct.
         """
         self._mint()
+        self._expect_setting_get(MINT_KEY_ADDRESS)
+        self._expect_stake_set(100.0, self._public_key)
         self._expect_ok()
 
     # def test_send_stake(self):

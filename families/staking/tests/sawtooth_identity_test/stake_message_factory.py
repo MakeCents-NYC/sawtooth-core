@@ -106,10 +106,21 @@ class StakeMessageFactory(object):
                                mint=mint)
         return self._create_tp_process_request(payload)
 
-    def create_mint_stake_request(self, total_supply, mint_key):
-        # there is a lot more to do here, we need to create someway to update
-        # only specifc stake amounts int he presence of a map.
-        txn = self.create_mint_stake_transaction(total_supply, mint_key)
+    def create_mint_stake_request(self, total_supply, public_key):
+        stake_list = StakeList()
+        # create the unreferenced key
+        stake_list.stakeMap.get_or_create(public_key)
+        # assign each submessage field indirectly
+        stake_list.stakeMap[public_key].nonce = 1
+        stake_list.stakeMap[public_key].ownerPubKey = public_key
+        stake_list.stakeMap[public_key].value = total_supply
+        stake_list.stakeMap[public_key].value = 1
+        return self._factory.create_set_request({
+            self._stake_to_address(public_key): stake_list.SerializeToString()})
+
+    def create_mint_stake_response(self, key):
+        stake_addr = [self._stake_to_address(key)]
+        return self._factory.create_set_response(stake_addr)
 
     def create_set_stake_request(self, owner_pub_Key, value):
         stake = Stake(ownerPubKey=owner_pub_Key, value=value, nonce=1)
@@ -118,13 +129,8 @@ class StakeMessageFactory(object):
         return self._factory.create_set_request({
             self._stake_to_address(owner_pub_Key): stake_list.SerializeToString()})
 
-    def create_mint_stake_response(self, name):
-        stake_addr = [self._stake_to_address(name)]
-        return self._factory.create_set_response(stake_addr)
-
     def create_get_stake_request(self, public_key):
         addresses = [self._stake_to_address(public_key)]
-        # TODO. parse the entries?
         return self._factory.create_get_request(addresses)
 
     def create_get_stake_response(self, pub_key, map=None):
@@ -150,12 +156,12 @@ class StakeMessageFactory(object):
     def create_get_setting_response(self, key, allowed):
         if allowed:
             entry = Setting.Entry(
-                key="sawtooth.identity.allowed_keys",
+                key="sawtooth.stake.allowed_keys",
                 value=self.public_key)
             data = Setting(entries=[entry]).SerializeToString()
         else:
             entry = Setting.Entry(
-                key="sawtooth.identity.allowed_keys",
+                key="sawtooth.stake.allowed_keys",
                 value="")
             data = Setting(entries=[entry]).SerializeToString()
 
