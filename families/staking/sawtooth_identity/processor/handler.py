@@ -100,7 +100,7 @@ def create_block_address(block_num):
     return BLOCK_INFO_NAMESPACE + hex(block_num)[2:].zfill(62)
 
 
-def _check_block_number(block_config_data, context):
+def _check_block_number(context):
 
     block_config = _get_data(BLOCK_CONFIG_ADDRESS, context)
     if not block_config:
@@ -115,6 +115,27 @@ def _check_block_number(block_config_data, context):
 
 
 def _check_allowed_minter(minting_key, context):
+    entries_list = _get_data(ALLOWED_SIGNER_ADDRESS, context)
+    if not entries_list:
+        raise InvalidTransaction(
+            "The transaction signer is not authorized to submit transactions: "
+            "{}".format(minting_key))
+
+    setting = Setting()
+    setting.ParseFromString(entries_list[0].data)
+    for entry in setting.entries:
+        if entry.key == "sawtooth.stake.allowed_keys":
+            allowed_signer = entry.value.split(",")
+            LOGGER.info('minting key: {}'.format(allowed_signer))
+            if minting_key == allowed_signer[0]:
+                return
+
+    raise InvalidTransaction(
+        "The transction signer is not authorized mint stake tokens: "
+        "{}".format(minting_key))
+
+
+def _check_allowed_signer(minting_key, context):
     entries_list = _get_data(ALLOWED_SIGNER_ADDRESS, context)
     if not entries_list:
         raise InvalidTransaction(
@@ -161,7 +182,7 @@ class IdentityTransactionHandler(TransactionHandler):
             _set_send(payload.send, context)
 
         elif id_type == StakePayload.LOCK_STAKE:
-            _set_lock(payload.lock, context)
+            _apply_lock(payload.lock, context)
 
         elif id_type == StakePayload.MINT_STAKE:
             _apply_mint(payload.mint, context, signer)
@@ -171,7 +192,7 @@ class IdentityTransactionHandler(TransactionHandler):
                                      " MINT, SEND, or LOCK payload")
 
 
-def _build_stake_list(stake, stake_list=None):
+def _unmarshal_stake_list(stake, stake_list=None):
     """
     This is a utility function for constructing stake lists
     as well as updating existing ones while preserving state.
@@ -214,12 +235,60 @@ def _apply_mint(minting_payload, context, public_key):
         event_type="stake/update", attributes=[("updated", public_key)])
     LOGGER.debug("Updated address: \n {}".format(public_key))
 
+
+def _apply_lock(locking_payload, context, public_key):
+    """
+    The _set_mint function is used to initialize the staking tp.
+    It requires that a public key be set in the transaction
+    procesor settings under the settings.stake.mint.key
+    :param data: The deserialized MintStakeTransactionData protobuf
+    :param context: The connection information to the validator
+    :return: ok
+    """
+    owner_address = _stake_to_address(public_key)
+    owner_sl = _get_data(owner_address, context)
+    if not owner_sl:
+        raise InvalidTransaction(
+            "There doesn't appear to be any stake here.")
+    # parse the payload
+    stake_list = StakeList()
+    stake_list.ParseFromString(owner_address[0].data)
+    stake = stake_list.stakeMap.get_or_create(public_key)
+    # Is this sufficient?
+    if not stake.HasField('ownerPubKey'):
+        raise InvalidTransaction("The signer of this transaction "
+                                 "does not own any stake")
+    _check_allowed_signer(stake.ownerPubKey, context)
+
+    current_lock = stake.blockNumber  #
+    current_block = _check_block_number(context)  # the most recent block
+    target_lock_block = locking_payload.blockNumber  # The block we want to lock until
+
+    if target_lock_block < current_block:
+        raise InvalidTransaction("Cannot lock stake in the past. "
+                                 "\n current block number: {} "
+                                 "\n target lock block: {}."
+                                 .format(current_block, target_lock_block))
+
+    if current_lock > current_block:
+        raise InvalidTransaction("Cannot lock stake that is already locked. "
+                                 "\n current block number: {} "
+                                 "\n current lock block: {}."
+                                 .format(current_block, current_lock))
+
+    stake_list.stakeMap[public_key].nonce += 1
+    stake_list.stakeMap[public_key].blockNumber = target_lock_block
+
+    # submit the state to update to the validator
+    ico_data = {owner_address: stake_list.SerializeToString()}
+    _set_data(context, **ico_data)
+
+    context.add_event(
+        event_type="stake/update", attributes=[("updated", public_key)])
+    LOGGER.debug("Updated address: \n {}".format(public_key))
+
 def _set_send(data, context):
     raise NotImplementedError()
-
-
-def _set_lock(data, context):
-    raise NotImplementedError
 
 
 def _set_data(context, **address_dict):
