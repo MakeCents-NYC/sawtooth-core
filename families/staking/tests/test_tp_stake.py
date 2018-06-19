@@ -19,6 +19,8 @@ from sawtooth_identity_test.stake_message_factory \
 from sawtooth_processor_test.transaction_processor_test_case \
     import TransactionProcessorTestCase
 
+
+
 MINT_KEY_ADDRESS = '000000a87cb5eafdcca6a8f4caf4ff95731a23f91e6901b1da081ee3b0c44298fc1c14'
 
 
@@ -30,8 +32,13 @@ class TestStake(TransactionProcessorTestCase):
         cls.factory = StakeMessageFactory()
 
     # expect getting a stake address
-    def _expect_stake_get(self, key, allowed=True):
-        pass
+    def _expect_stake_get(self, public_key=None, **stake_alloc):
+        recieved = self.validator.expect(
+            self.factory.create_get_role_request(public_key))
+
+        self.validator.respond(
+            self.factory.create_get_role_response(public_key, stake_list),
+            recieved)
 
     def _expect_stake_set(self, total_supply, public_key):
         recieved = self.validator.expect(
@@ -42,8 +49,8 @@ class TestStake(TransactionProcessorTestCase):
             recieved)
 
     # creates the initial supply
-    def _mint(self):
-        self.validator.send(self.factory.create_mint_stake_transaction(100.0, self._public_key))
+    def _mint(self, total_supply, public_key):
+        self.validator.send(self.factory.create_mint_stake_transaction(total_supply, public_key))
 
     # send a role to be created in state to validator
     def _send(self, name, value):
@@ -89,11 +96,34 @@ class TestStake(TransactionProcessorTestCase):
         Tests initializing the total supply, it checks the minting
         key address to see if the signer of the transaction is correct.
         """
-        self._mint()
+        self._mint(100.0, self._public_key)
         self._expect_setting_get(MINT_KEY_ADDRESS)
         self._expect_stake_set(100.0, self._public_key)
+        self._expect_add_event(self._public_key)
         self._expect_ok()
 
+    def test_mint_total_supply_with_bad_key(self):
+        """
+        Test that only the minting key can sign minting transaction.
+        TODO: this test is superficial, we need a different signer.
+        :return:
+        """
+        self._mint(100.0, "foo")
+        self._expect_setting_get(MINT_KEY_ADDRESS, False)
+        self._expect_invalid_transaction()
+
+
+
+        # test_send
+        # self._send(50, "asdf")
+        # st_s = {"ownerPubKey": self._public_key, "value": 50}
+        # st_r = {"ownerPubKey": 'asdf', "value": 50}
+        # self._expect_stake_get(self._public_key, **st_)
+        # self._expect_stake_get(self._public_key, **st)
+        # self._expect_stake_set(self._public_key, **st)
+        # self._expect_stake_set(self._public_key, **st)
+        # self._expect_add_event()
+        # self._expect_ok()
     # def test_send_stake(self):
     #     """
     #     Tests sending some stake
