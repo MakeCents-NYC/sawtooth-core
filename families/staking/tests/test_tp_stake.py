@@ -148,15 +148,16 @@ class TestStake(TransactionProcessorTestCase):
         self._expect_stake_get(self._public_key, stake=self.factory.create_stake(owner_key=self._public_key,
                                                                                  value=1,
                                                                                  block_number=1,
-                                                                                 ))
+                                                                                 nonce=1))
         self._expect_config_get(config=self.factory.create_config(2, oldest_block=1))
         # stake = Stake(nonce=1, value=1, blockNumber=1, ownerPubKey=self._public_key)
         # stake_list = self.factory.build_stake_list(stake)
         # self._expect_stake_get(self._public_key, **{self._public_key: stake_list})
         self._expect_stake_set(stake=self.factory.create_stake(owner_key=self._public_key,
                                                                value=1,
-                                                               block_number=2,
-                                                              ))
+                                                               block_number=1000,
+                                                               nonce=2))
+        self._expect_add_event(self._public_key)
         self._expect_ok()
 
         # test_send

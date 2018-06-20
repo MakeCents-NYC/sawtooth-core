@@ -203,7 +203,7 @@ class StakeMessageFactory(object):
                      owner_key=None,
                      value=None,
                      block_number=None,
-                     nonce=1,
+                     nonce=None,
                      stake=None):
         # if there is already a stake list
         if stake is not None:

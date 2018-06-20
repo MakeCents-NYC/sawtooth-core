@@ -257,7 +257,9 @@ def _apply_lock(data, context, public_key):
                                  "\n current lock block: {}."
                                  .format(current_block, current_lock))
 
-    #stake_list.stakeMap[public_key].nonce += 1
+    # increment the nonce
+    stake_list.stakeMap[public_key].nonce += 1
+    # set the locks
     stake_list.stakeMap[public_key].blockNumber = target_lock_block
 
     # submit the state to update to the validator
