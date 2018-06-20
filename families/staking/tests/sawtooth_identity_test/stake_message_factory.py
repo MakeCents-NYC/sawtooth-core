@@ -23,15 +23,20 @@ from sawtooth_identity.protobuf.stake_payload_pb2 import LockStakeTransactionDat
 from sawtooth_identity.protobuf.stake_payload_pb2 import SendStakeTransactionData
 from sawtooth_identity.protobuf.stake_payload_pb2 import MintStakeTransactionData
 
+from sawtooth_identity.protobuf.block_info_pb2 import BlockInfoConfig
+
 from sawtooth_identity.protobuf.setting_pb2 import Setting
 
 _MAX_KEY_PARTS = 2
 _STAKE_TYPE_SIZE = 2
 _ADDRESS_PART_SIZE = 62
-
 _DEFAULT_TYPE_PREFIX = '00'
 
 LOGGER = logging.getLogger(__name__)
+
+CONFIG_ADDRESS = '00b10c' + '01' + '0' * 62
+DEFAULT_SYNC_TOLERANCE = 60 * 5
+DEFAULT_TARGET_COUNT = 256
 
 
 class StakeMessageFactory(object):
@@ -81,39 +86,20 @@ class StakeMessageFactory(object):
                 self._stake_to_address(send.toPubKey)
             ]
         elif payload.payload_type == StakePayload.LOCK_STAKE:
-            lock = LockStakeTransactionData()
-            lock.ParseFromString(payload.data)
+            lock = payload.lock
             inputs = [self._stake_to_address(self._factory.get_public_key())]
             outputs = [self._stake_to_address(self._factory.get_public_key())]
 
         # MINT_STAKE
         else:
-            mint = MintStakeTransactionData()
-            # Extract the payload from create_mint_stake_transaction
+            # Extract the payload from create_mint_stake_transaction, will need to extract
+            # the pub keys for ICO
             mint = payload.mint
             inputs = [self._stake_to_address(self._factory.get_public_key())]
             outputs = [self._stake_to_address(self._factory.get_public_key())]
 
         return self._factory.create_tp_process_request(
             payload.SerializeToString(), inputs, outputs, [])
-
-    def _build_stake_list(self, stake: Stake, stake_list=None):
-        # if there is already a stake list
-        if stake_list is not None:
-            stake_list.stakeMap.get_or_create(stake.ownerPubKey)
-            stake_list.stakeMap[stake.ownerPubKey] = stake.ownerPubKey
-            stake_list.stakeMap[stake.nonce] = stake.nonce
-            stake_list.stakeMap[stake.blockNum] = stake.blockNum
-            stake_list.stakeMap[stake.value] = stake.value
-        # there is no state at the address.
-        else:
-            stake_list = StakeList()
-            stake_list.stakeMap.get_or_create(stake.ownerPubKey)
-            stake_list.stakeMap[stake.ownerPubKey]=stake.ownerPubKey
-            stake_list.stakeMap[stake.nonce]=stake.nonce
-            stake_list.stakeMap[stake.blockNum]=stake.blockNum
-            stake_list.stakeMap[stake.value]=stake.value
-            return stake_list
 
     def create_mint_stake_transaction(self, total_supply: float, mint_key: str):
         mint = MintStakeTransactionData()
@@ -124,6 +110,14 @@ class StakeMessageFactory(object):
                                mint=mint)
         return self._create_tp_process_request(payload)
 
+    def create_lock_stake_transaction(self, block_number: int):
+        lock = LockStakeTransactionData()
+        lock.blockNumber = block_number
+
+        payload = StakePayload(payload_type=StakePayload.LOCK_STAKE,
+                               lock=lock)
+        return self._create_tp_process_request(payload)
+
     def create_mint_stake_request(self, total_supply, public_key):
         stake_list = StakeList()
         # create the unreferenced key
@@ -132,7 +126,7 @@ class StakeMessageFactory(object):
         stake_list.stakeMap[public_key].nonce = 1
         stake_list.stakeMap[public_key].ownerPubKey = public_key
         stake_list.stakeMap[public_key].value = total_supply
-        stake_list.stakeMap[public_key].value = 1
+        stake_list.stakeMap[public_key].blockNumber = 1
         return self._factory.create_set_request({
             self._stake_to_address(public_key): stake_list.SerializeToString()})
 
@@ -140,13 +134,8 @@ class StakeMessageFactory(object):
         stake_addr = [self._stake_to_address(key)]
         return self._factory.create_set_response(stake_addr)
 
-    def create_set_stake_request(self, public_key, value):
-        stake_list = StakeList()
-        # create the unreferenced key
-        stake_list.stakeMap.get_or_create(public_key)
-        stake_list.stakeMap[public_key].nonce += 1
-        stake_list.stakeMap[public_key].ownerPubKey = public_key
-        stake_list.stakeMap[public_key].value = value
+    def create_set_stake_request(self, public_key, stake=None):
+        stake_list = self.create_stake(stake=stake)
         return self._factory.create_set_request({
             self._stake_to_address(public_key): stake_list.SerializeToString()})
 
@@ -158,15 +147,12 @@ class StakeMessageFactory(object):
         addresses = [self._stake_to_address(public_key)]
         return self._factory.create_get_request(addresses)
 
-    def create_get_stake_response(self, pub_key, **stake_alloc):
+    def create_get_stake_response(self, pub_key, stake=None):
         data = None
-        if stake_alloc is not None:
-            for key, val in stake_alloc:
-                # here key is a pub key and val is a
-                # Stake_pb2 object.
-                data = self._build_stake_list(key, val)
+        if stake is not None:
+                data = self.create_stake(stake=stake)
         return self._factory.create_get_response(
-            {self._stake_to_address(pub_key): data})
+            {self._stake_to_address(pub_key): data.SerializeToString()})
 
     def create_set_lock_request(self, name, policy_name):
         pass
@@ -200,7 +186,50 @@ class StakeMessageFactory(object):
     def create_add_event_response(self):
         return self._factory.create_add_event_response()
 
+    def create_config(self,
+                      latest_block,
+                      oldest_block=None,
+                      target_count=DEFAULT_TARGET_COUNT,
+                      sync_tolerance=DEFAULT_SYNC_TOLERANCE):
+        if oldest_block is None:
+            oldest_block = latest_block - DEFAULT_TARGET_COUNT
+        return BlockInfoConfig(
+            latest_block=latest_block,
+            oldest_block=oldest_block,
+            target_count=target_count,
+            sync_tolerance=sync_tolerance)
 
+    def create_stake(self,
+                     owner_key=None,
+                     value=None,
+                     block_number=None,
+                     nonce=1,
+                     stake=None):
+        # if there is already a stake list
+        if stake is not None:
+            return stake
+        # there is no state at the address.
+        else:
+            stake_list = StakeList()
+            stake_list.stakeMap.get_or_create(owner_key)
+            stake_list.stakeMap[owner_key].ownerPubKey = owner_key
+            stake_list.stakeMap[owner_key].nonce = nonce
+            stake_list.stakeMap[owner_key].blockNumber = block_number
+            stake_list.stakeMap[owner_key].value = value
+            return stake_list
+
+    def create_get_block_config_request(self):
+        return self._factory.create_get_request(addresses=[CONFIG_ADDRESS])
+
+    def create_get_block_config_response(self, config):
+        if config:
+            LOGGER.info(config)
+            data = self.create_config(2, oldest_block=1)
+            #conf = self.create_config(config.latest_block, oldest_block=1)
+            #data = config.SerializeToString()
+        else:
+            data = None
+        return self._factory.create_get_response({CONFIG_ADDRESS: data.SerializeToString()})
 
 
 

@@ -23,6 +23,14 @@ from sawtooth_processor_test.transaction_processor_test_case \
 
 MINT_KEY_ADDRESS = '000000a87cb5eafdcca6a8f4caf4ff95731a23f91e6901b1da081ee3b0c44298fc1c14'
 
+FAMILY_NAME = 'block_info'
+FAMILY_VERSION = '1.0'
+NAMESPACE = '00b10c'
+BLOCK_INFO_NAMESPACE = NAMESPACE + '00'
+CONFIG_ADDRESS = NAMESPACE + '01' + '0' * 62
+DEFAULT_SYNC_TOLERANCE = 60 * 5
+DEFAULT_TARGET_COUNT = 256
+
 
 class TestStake(TransactionProcessorTestCase):
 
@@ -32,15 +40,29 @@ class TestStake(TransactionProcessorTestCase):
         cls.factory = StakeMessageFactory()
 
     # expect getting a stake address
-    def _expect_stake_get(self, public_key=None, **stake_alloc):
+    def _expect_stake_get(self, public_key=None, stake=None):
+        """
+
+        :param public_key: The key used to generate the stake address to fetch
+        :param stake_alloc: A dictionary with the expected return value
+        :return:
+        """
         recieved = self.validator.expect(
-            self.factory.create_get_role_request(public_key))
+            self.factory.create_get_stake_request(public_key))
 
         self.validator.respond(
-            self.factory.create_get_role_response(public_key, stake_list),
+            self.factory.create_get_stake_response(public_key, stake),
             recieved)
 
-    def _expect_stake_set(self, total_supply, public_key):
+    def _expect_stake_set(self, stake=None):
+        recieved = self.validator.expect(
+            self.factory.create_set_stake_request(self._public_key, stake=stake))
+
+        self.validator.respond(
+            self.factory.create_mint_stake_response(self._public_key),
+            recieved)
+
+    def _expect_mint_stake_set(self, total_supply, public_key):
         recieved = self.validator.expect(
             self.factory.create_mint_stake_request(total_supply, public_key))
 
@@ -57,8 +79,8 @@ class TestStake(TransactionProcessorTestCase):
         pass
 
     # send a lock command to validator
-    def _lock(self, name, duration):
-        pass
+    def _lock(self, block_number):
+        self.validator.send(self.factory.create_lock_stake_transaction(block_number))
 
     def _expect_setting_get(self, key, allowed=True):
         recieved = self.validator.expect(
@@ -67,6 +89,15 @@ class TestStake(TransactionProcessorTestCase):
         self.validator.respond(
             self.factory.create_get_setting_response(key, allowed),
             recieved)
+
+    def _expect_config_get(self, config=None):
+        received = self.validator.expect(
+            self.factory.create_get_block_config_request())
+
+        response = {} if config is None \
+            else {CONFIG_ADDRESS: config.SerializeToString()}
+        self.validator.respond(
+            self.factory.create_get_block_config_response(response), received)
 
     def _expect_add_event(self, key):
         recieved = self.validator.expect(
@@ -98,7 +129,7 @@ class TestStake(TransactionProcessorTestCase):
         """
         self._mint(100.0, self._public_key)
         self._expect_setting_get(MINT_KEY_ADDRESS)
-        self._expect_stake_set(100.0, self._public_key)
+        self._expect_mint_stake_set(100.0, self._public_key)
         self._expect_add_event(self._public_key)
         self._expect_ok()
 
@@ -112,7 +143,21 @@ class TestStake(TransactionProcessorTestCase):
         self._expect_setting_get(MINT_KEY_ADDRESS, False)
         self._expect_invalid_transaction()
 
-
+    def test_lock_transaction(self):
+        self._lock(1000)
+        self._expect_stake_get(self._public_key, stake=self.factory.create_stake(owner_key=self._public_key,
+                                                                                 value=1,
+                                                                                 block_number=1,
+                                                                                 ))
+        self._expect_config_get(config=self.factory.create_config(2, oldest_block=1))
+        # stake = Stake(nonce=1, value=1, blockNumber=1, ownerPubKey=self._public_key)
+        # stake_list = self.factory.build_stake_list(stake)
+        # self._expect_stake_get(self._public_key, **{self._public_key: stake_list})
+        self._expect_stake_set(stake=self.factory.create_stake(owner_key=self._public_key,
+                                                               value=1,
+                                                               block_number=2,
+                                                              ))
+        self._expect_ok()
 
         # test_send
         # self._send(50, "asdf")
