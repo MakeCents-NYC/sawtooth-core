@@ -134,6 +134,27 @@ def _check_allowed_minter(minting_key, context):
         "{}".format(minting_key))
 
 
+def _check_allowed_signer(signing_key, stake_owner):
+    if signing_key == stake_owner:
+        return
+    raise InvalidTransaction(
+        "The signer of this transaction is not authorized to modify this stake")
+
+
+def _check_allowed_lock(current_block, current_lock, target_lock_block):
+    if target_lock_block < current_block:
+        raise InvalidTransaction("Cannot lock stake in the past. "
+                                 "\n current block number: {} "
+                                 "\n target lock block: {}."
+                                 .format(current_block, target_lock_block))
+
+    if current_lock > current_block:
+        raise InvalidTransaction("Cannot lock stake that is already locked. "
+                                 "\n current block number: {} "
+                                 "\n current lock block: {}."
+                                 .format(current_block, current_lock))
+    return
+
 class IdentityTransactionHandler(TransactionHandler):
     @property
     def family_name(self):
@@ -194,7 +215,7 @@ def _apply_mint(minting_payload, context, public_key):
     _check_allowed_minter(public_key, context)
     current_block = _check_block_number(context)
     LOGGER.info('The current block is :{}'.format(current_block))
-    if current_block > 10:
+    if current_block != 1 :
         raise InvalidTransaction("Minting stake after the genesis block is forbidden.")
     total_supply = minting_payload.totalSupply
 
@@ -244,23 +265,14 @@ def _apply_lock(data, context, public_key):
     if not stake_list.stakeMap[public_key]:
         raise InvalidTransaction("The signer of this transaction "
                                  "does not own any stake")
-    #_check_allowed_signer(stake.ownerPubKey, context)
+    # ensure the signer is allowed to do this.
+    _check_allowed_signer(stake.ownerPubKey, public_key)
 
     current_lock = stake.blockNumber  #
     current_block = _check_block_number(context)  # the most recent block
     target_lock_block = data.blockNumber  # The block we want to lock until
 
-    if target_lock_block < current_block:
-        raise InvalidTransaction("Cannot lock stake in the past. "
-                                 "\n current block number: {} "
-                                 "\n target lock block: {}."
-                                 .format(current_block, target_lock_block))
-
-    if current_lock > current_block:
-        raise InvalidTransaction("Cannot lock stake that is already locked. "
-                                 "\n current block number: {} "
-                                 "\n current lock block: {}."
-                                 .format(current_block, current_lock))
+    _check_allowed_lock(current_block, current_lock, target_lock_block)
 
     # increment the nonce
     stake_list.stakeMap[public_key].nonce += 1
