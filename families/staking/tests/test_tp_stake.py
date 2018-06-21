@@ -20,7 +20,6 @@ from sawtooth_processor_test.transaction_processor_test_case \
     import TransactionProcessorTestCase
 
 
-
 MINT_KEY_ADDRESS = '000000a87cb5eafdcca6a8f4caf4ff95731a23f91e6901b1da081ee3b0c44298fc1c14'
 
 FAMILY_NAME = 'block_info'
@@ -129,7 +128,11 @@ class TestStake(TransactionProcessorTestCase):
         """
         self._mint(100.0, self._public_key)
         self._expect_setting_get(MINT_KEY_ADDRESS)
-        self._expect_mint_stake_set(100.0, self._public_key)
+        self._expect_config_get(config=self.factory.create_config(1, oldest_block=1))
+        self._expect_stake_set(stake=self.factory.create_stake(owner_key=self._public_key,
+                                                               value=100.0,
+                                                               block_number=1,
+                                                               nonce=1))
         self._expect_add_event(self._public_key)
         self._expect_ok()
 

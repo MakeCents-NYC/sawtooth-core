@@ -192,15 +192,20 @@ def _apply_mint(minting_payload, context, public_key):
     :return: ok
     """
     _check_allowed_minter(public_key, context)
+    current_block = _check_block_number(context)
+    LOGGER.info('The current block is :{}'.format(current_block))
+    if current_block > 10:
+        raise InvalidTransaction("Minting stake after the genesis block is forbidden.")
     total_supply = minting_payload.totalSupply
 
     stake_list = StakeList()
     stake_list.stakeMap.get_or_create(public_key)
 
+    #
     stake_list.stakeMap[public_key].nonce = 1
     stake_list.stakeMap[public_key].ownerPubKey = public_key
     stake_list.stakeMap[public_key].value = total_supply
-
+    stake_list.stakeMap[public_key].blockNumber = current_block
     # calculate the address to write to
     address = _stake_to_address(public_key)
 

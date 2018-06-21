@@ -119,14 +119,7 @@ class StakeMessageFactory(object):
         return self._create_tp_process_request(payload)
 
     def create_mint_stake_request(self, total_supply, public_key):
-        stake_list = StakeList()
-        # create the unreferenced key
-        stake_list.stakeMap.get_or_create(public_key)
-        # assign each submessage field indirectly
-        stake_list.stakeMap[public_key].nonce = 1
-        stake_list.stakeMap[public_key].ownerPubKey = public_key
-        stake_list.stakeMap[public_key].value = total_supply
-        stake_list.stakeMap[public_key].blockNumber = 1
+        stake_list = self.create_stake(owner_key=public_key, value=total_supply, block_number=1, nonce=1)
         return self._factory.create_set_request({
             self._stake_to_address(public_key): stake_list.SerializeToString()})
 
@@ -221,10 +214,13 @@ class StakeMessageFactory(object):
     def create_get_block_config_request(self):
         return self._factory.create_get_request(addresses=[CONFIG_ADDRESS])
 
-    def create_get_block_config_response(self, config):
-        if config:
-            LOGGER.info(config)
-            data = self.create_config(2, oldest_block=1)
+    def create_get_block_config_response(self, msg):
+        if msg:
+            # block_config.ParseFromString(bc[0].data)
+            config_key = next(iter(msg))
+            config_data = BlockInfoConfig()
+            config_data.ParseFromString(msg[config_key])
+            data = self.create_config(config_data.latest_block, oldest_block=1)
             #conf = self.create_config(config.latest_block, oldest_block=1)
             #data = config.SerializeToString()
         else:
