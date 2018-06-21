@@ -1,0 +1,64 @@
+// Copyright 2017 Intel Corporation
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+// -----------------------------------------------------------------------------
+
+syntax = "proto3";
+
+option java_multiple_files = true;
+option java_package = "sawtooth.identity.protobuf";
+
+message ValidatorInfo {
+
+
+    //Name of the endpoint. It should be human readable
+    string name = 1;
+
+    //validator's public key
+    string id = 2;
+
+
+    SignUpInfo signup_info =3;
+
+    //header signature for ValidatorRegistryPayload
+    string transaction_id = 4;
+
+}
+
+message SignUpInfo{
+
+    //Encoded public key corresponding to privte key used by PoET to sign wait certificates
+    string poet_public_key=1;
+
+    //Information that can be used internally to verify the validity of the signup information as an opaque buffer
+    string proof_data = 2;
+
+
+    //string corresponding to the address storing the stake owned by this validator This is the major change
+    string stake_address = 3;
+
+    //Nonce associated with the signup info. Note that this must watch the nonce provided whne the signup info was created
+    string nonce = 4;
+
+}
+
+message ValidatorMap{
+
+    message Entry{
+        string key = 1;
+        string value = 2;
+    }
+
+    //List of validator entries
+    repeated Entry entries =1;
+}

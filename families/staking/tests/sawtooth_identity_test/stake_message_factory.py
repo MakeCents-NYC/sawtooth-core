@@ -66,7 +66,8 @@ class StakeMessageFactory(object):
         outputs = []
         if payload.payload_type == StakePayload.SEND_STAKE:
             send = SendStakeTransactionData()
-            send.ParseFromString(payload.data)
+            send=payload.send
+            #send.ParseFromString(payload.send)
             #TODO add block_info
             inputs = [
                 # the stake address `from`
@@ -96,6 +97,25 @@ class StakeMessageFactory(object):
 
         return self._factory.create_tp_process_request(
             payload.SerializeToString(), inputs, outputs, [])
+
+    def build_stake_list(self, stake: Stake, stake_list=None):
+        # if there is already a stake list
+        if stake_list is not None:
+            stake_list.stakeMap.get_or_create(stake.ownerPubKey)
+            stake_list.stakeMap[stake.ownerPubKey] = stake.ownerPubKey
+            stake_list.stakeMap[stake.nonce] = stake.nonce
+            stake_list.stakeMap[stake.blockNum] = stake.blockNum
+            stake_list.stakeMap[stake.value] = stake.value
+            # there is no state at the address.
+        else:
+            stake_list = StakeList()
+            stake_list.stakeMap.get_or_create(stake.ownerPubKey)
+            # stake_list.stakeMap[stake.ownerPubKey] = stake.ownerPubKey
+            # stake_list.stakeMap[stake.nonce] = stake.nonce
+            # stake_list.stakeMap[stake.blockNum] = stake.blockNum
+            # stake_list.stakeMap[stake.value] = stake.value
+
+        return stake_list.SerializeToString()
 
     def create_mint_stake_transaction(self, total_supply: float, mint_key: str):
         mint = MintStakeTransactionData()
@@ -143,6 +163,38 @@ class StakeMessageFactory(object):
             data = None
         return self._factory.create_get_response({address: data})
 
+    def create_send_stake_transaction(self, public_key: str, value: float, tokey: str):
+        send=SendStakeTransactionData()
+        send.toPubKey=tokey
+        send.value="10.0"
+        payload = StakePayload(payload_type=StakePayload.SEND_STAKE,
+                               send=send)
+        return self._create_tp_process_request(payload)
+
+
+    def create_send_stake_request(self, public_key:str,value:float, tokey:str):
+        # stake_list = StakeList()
+        # create the unreferenced key
+        # stake_list.stakeMap.get_stake(public_key)
+        # stake_list.stakeMap[public_key].value = stake_list.stakeMap[public_key].value-value
+        # self._factory.create_set_request({self._stake_to_address(public_key): stake_list.SerializeToString()})
+        # stake_list.stakeMap.get_stake(tokey)
+        # stake_list.stakeMap[tokey].value = stake_list.stakeMap[tokey].value + value
+        # self._factory.create_set_request({self._stake_to_address(tokey):stake_list.SerializeToString()})
+        # stake_list.stakeMap.get_or_create(public_key)
+        # # assign each submessage field indirectly
+        # stake_list.stakeMap[public_key].nonce = 1
+        # stake_list.stakeMap[public_key].ownerPubKey = public_key
+        # stake_list.stakeMap[public_key].value = value
+        # stake_list.stakeMap[public_key].blockNumber = 1
+        # return self._factory.create_set_request({self._stake_to_address(public_key):stake_list.SerializeToString()})
+        pass
+
+    def create_send_stake_response(self, key):
+        stake_addr = [self._stake_to_address(key)]
+        return self._factory.create_set_response(stake_addr)
+
+
     def create_set_lock_request(self, name, policy_name):
         pass
 
@@ -175,8 +227,35 @@ class StakeMessageFactory(object):
     def create_add_event_response(self):
         return self._factory.create_add_event_response()
 
+    def create_stake_request(self,stake,public_key):
+        if stake is None:
+            stake_list = StakeList()
+            # create the unreferenced key
+            stake_list.stakeMap.get_or_create(public_key)
+            # assign each submessage field indirectly
+            stake_list.stakeMap[public_key].nonce = 1
+            stake_list.stakeMap[public_key].ownerPubKey = public_key
+            stake_list.stakeMap[public_key].value = 10.0
+            stake_list.stakeMap[public_key].blockNumber=1
+        else:
+            return self._factory.create_stake_response(self)
 
+    def create_stake_response(self):
+        return self._factory.create_stake_response(self.public_key)
 
+    def create_get_stake_request(self, public_key):
+            addresses = [self._stake_to_address(public_key)]
+            return self._factory.create_get_request(addresses)
+
+    def create_get_stake_response(self, pub_key, **stake_alloc):
+        data = None
+        if stake_alloc is not None:
+            for key, val in stake_alloc:
+                # here key is a pub key and val is a
+                # Stake_pb2 object.
+                data = self.build_stake_list(key, val)
+        return self._factory.create_get_response(
+                {self._stake_to_address(pub_key): data})
 
 
     # def create_send_stake_transaction(self, to_public_key, stake_amount):

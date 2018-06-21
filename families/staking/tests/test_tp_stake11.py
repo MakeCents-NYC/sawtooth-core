@@ -17,21 +17,9 @@ from sawtooth_identity_test.stake_message_factory import StakeMessageFactory
 
 from sawtooth_processor_test.transaction_processor_test_case import TransactionProcessorTestCase
 from sawtooth_identity.protobuf.stake_pb2 import Stake
-import secp256k1
-
-# key_handler = secp256k1.PrivateKey()
-# private_key_bytes = key_handler.private_key
-# public_key_bytes = key_handler.public_key.serialize()
-#
-# public_key_hex = public_key_bytes.hex()
-# tokey=public_key_hex
 
 MINT_KEY_ADDRESS = '000000a87cb5eafdcca6a8f4caf4ff95731a23f91e6901b1da081ee3b0c44298fc1c14'
-MINT_KEY_ADDR = '000000a87cb5eafdcca6a8f4caf4ff95731a23f91e6901b1da081ee3b0c44298fc1c20'
-#tokey='0295229a6464b4e85d3d18e936405faaa1063d9d80a06fe647016cc270f659d929'
-
-
-tokey='807062002c26b46b68ffc68ff99b453c1d30413413422d706483bfa0f98a5e886266c1'
+tokey='foo'
 
 class TestStake(TransactionProcessorTestCase):
 
@@ -41,18 +29,25 @@ class TestStake(TransactionProcessorTestCase):
         cls.factory = StakeMessageFactory()
 
     # expect getting a stake address
-    def _expect_stake_get(self, public_key=None, **stake_alloc):
-
-        recieved = self.validator.expect(
-                self.factory.create_get_stake_request(public_key))
-
-        self.validator.respond(
-            self.factory.create_get_stake_response(public_key, stake_alloc),
-                recieved)
+    def _expect_stake_get(self, key, allowed=True):
+        stake=Stake()
+        stake.nonce=1
+        stake.ownerPubKey=key
+        stake.value=100.0
+        stake.blockNumber=1
+        return stake
 
     def _expect_stake_set(self, total_supply, public_key):
         recieved = self.validator.expect(
             self.factory.create_mint_stake_request(total_supply, public_key))
+
+        self.validator.respond(
+            self.factory.create_mint_stake_response(public_key),
+            recieved)
+
+    def _expect_send_stake(self, public_key,value,tokey):
+        recieved = self.validator.expect(
+            self.factory.create_mint_stake_request(value,tokey))
 
         self.validator.respond(
             self.factory.create_mint_stake_response(public_key),
@@ -101,26 +96,22 @@ class TestStake(TransactionProcessorTestCase):
     def _public_key(self):
         return self.factory.public_key
 
-    # def test_mint_total_supply(self):
-    #     """
-    #     Tests initializing the total supply, it checks the minting
-    #     key address to see if the signer of the transaction is correct.
-    #     """
-    #     self._mint()
-    #     #self._expect_setting_get(MINT_KEY_ADDRESS)
-    #     # self._expect_stake_set(100.0, self._public_key)
-    #     # self._expect_ok()
+    def test_mint_total_supply(self):
+        """
+        Tests initializing the total supply, it checks the minting
+        key address to see if the signer of the transaction is correct.
+        """
+        self._mint()
+        self._expect_setting_get(MINT_KEY_ADDRESS)
+        self._expect_stake_set(100.0, self._public_key)
+        self._expect_ok()
 
     def test_send_stake(self):
          self._send()
-         stake = Stake(nonce=1, value=1, blockNumber=1, ownerPubKey=self._public_key)
-         stake_list = self.factory.build_stake_list(stake)
-         self._expect_stake_get(self._public_key, **{self._public_key: stake_list})
-         # # self._expect_send_stake(self._public_key,10.0,tokey)
-         # # #self._expect_setting_get(MINT_KEY_ADDRESS)
-         # # #self._expect_stake_set(10.0,self._public_key)
-         # # #self._expect_add_event(self._public_key)
-         # self._expect_ok()
+         self._expect_send_stake(self._public_key,10.0,tokey)
+         #self._expect_stake_set()
+         self._expect_add_event()
+         self._expect_ok()
 
     # def test_send_stake(self):
     #     """

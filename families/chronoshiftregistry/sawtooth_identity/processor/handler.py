@@ -118,8 +118,6 @@ class IdentityTransactionHandler(TransactionHandler):
                                      " ROLE or a POLICY")
 
 
-
-
 def _check_allowed_transactor(transaction, context):
     header = transaction.header
 

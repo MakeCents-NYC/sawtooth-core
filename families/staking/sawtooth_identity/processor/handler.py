@@ -150,15 +150,17 @@ class IdentityTransactionHandler(TransactionHandler):
     def apply(self, transaction, context):
         header = transaction.header
         signer = header.signer_public_key
-        # parse the payload
+        #_check_valid_signer(transaction, context)
         payload = StakePayload()
         payload.ParseFromString(transaction.payload)
-
         id_type = payload.payload_type
-
+        address =_stake_to_address(signer)
+        current_block= get_block(address,context)
+        sender_stake=_get_stake(signer,context)
         if id_type == StakePayload.SEND_STAKE:
-            _set_send(payload.send, context)
-
+            send=payload.send
+            _send_stake(send, context, sender_stake, current_block)
+            #_set_send(payload.send, context)
         elif id_type == StakePayload.LOCK_STAKE:
             _set_lock(payload.lock, context)
 
@@ -168,6 +170,47 @@ class IdentityTransactionHandler(TransactionHandler):
         else:
             raise InvalidTransaction("The StakeType must be either a"
                                      " MINT, SEND, or LOCK payload")
+def _check_valid_signer(transaction, context):
+    header = transaction.header
+    entries_list = _get_data(ALLOWED_SIGNER_ADDRESS, context)
+    if not entries_list:
+        raise InvalidTransaction(
+            "The transaction signer is not authorized to submit transactions: "
+            "{}".format(header.signer_public_key))
+    else:
+        return
+    raise InvalidTransaction(
+        "The transaction signer is not authorized to submit transactions: "
+        "{}".format(header.signer_public_key))
+
+def get_block(address,context):
+    try:
+        entries = context.get_state([address], timeout=STATE_TIMEOUT_SEC)
+        # if not entries:
+        #     raise InvalidTransaction('No entries')
+        # else:
+        #     current_block = BlockInfoConfig()
+        #     current_block.parseFromString(entries[0].data)
+        #     return current_block
+    except FutureTimeoutError:
+        LOGGER.warning('Timeout occured on context.get_state([%s])', address)
+        raise InternalError('Unable to get {}'.format(address))
+
+
+def _get_stake(pub_key,context):
+    address=_stake_to_address(pub_key)
+    entries=context.get_state([address])
+    if not entries:
+        raise InternalError()
+    else:
+        stake_list=StakePayload()
+        stake_list.ParseFromString(entries[0].data)
+        stake=Stake()
+        stake.parseFromString(stake_list.get(pub_key))
+        if stake is None:
+            raise InternalError()
+        else:
+            return stake
 
 
 def _apply_mint(minting_payload, context, public_key):
@@ -197,6 +240,82 @@ def _apply_mint(minting_payload, context, public_key):
     ico_data = {address: stake_list.SerializeToString()}
     _set_data(context, **ico_data)
 
+
+
+def _send_stake(send, context,sender_stake,current_block):
+    if send.toPubKey is None:
+        raise InvalidTransaction("Every stake transaction entry must have ownerPubkey.")
+    if send.value is None:
+        raise InvalidTransaction("Every stake transaction must have a value.")
+    if sender_stake.blockNumber < current_block.latest_block:
+        raise InvalidTransaction("Invalid Block Number")
+    if send.value > sender_stake.value:
+        raise InvalidTransaction("Insufficient Balance")
+    receiver_stake = _get_stake(send.toPubKey, context)
+    senderstake_list = get_stakelist(sender_stake.ownerPubKey, context)
+    receiverstake_list = get_stakelist(send.toPubKey, context)
+    if receiver_stake is None:
+        receiver_stake = _create_stake(send, current_block)
+    else:
+        # if locked(sender_stake, current_block) or locked(receiver_stake):
+        #     raise InvalidTransaction("Transaction stake is locked")
+        # else:
+        sender_stake = _update_stake(sender_stake, 'sender', send.value)
+        receiver_stake = _update_stake(receiver_stake, 'receiver', send.value)
+    senderstake_list[sender_stake.ownerPubKey] = sender_stake
+    senderstake_list[receiver_stake.ownerPubKey] = receiver_stake
+    receiverstake_list[sender_stake.ownerPubKey] = sender_stake
+    receiverstake_list[receiver_stake.ownerPubKey] = receiver_stake
+    senderstake_list.SerializeToString()
+    _set_stake(context, senderstake_list)
+    _set_stake(context, receiverstake_list)
+
+def get_stakelist(pub_key,context):
+    address=_stake_to_address(pub_key)
+    entries=context.get_state(address)
+    if not entries:
+        return
+    else:
+        stake_list=StakeList()
+        stake_list.parseFromString(entries[0].data)
+    return stake_list
+
+def _update_stake(stake,stype,tvalue):
+    if stype=='sender':
+        stake.value=stake.value-tvalue
+    elif stype=='receiver':
+        stake.value=stake.value+tvalue
+    stake.SerializeToString()
+    return stake
+
+def _create_stake(send,current_block):
+    #creating a new Stake from a send object
+    stakelist=StakeList()
+    public_key=send.toPubKey
+    stakelist.stakeMap[public_key].nonce = 1
+    stakelist.stakeMap[public_key].ownerPubKey = public_key
+    stakelist.stakeMap[public_key].value = send.value
+    stakelist.stakeMap[public_key].blockNumber=current_block.latest_block+1
+    stakelist.SerializeToString()
+    #
+    # new_stake=Stake()
+    # new_stake.nonce=1
+    # new_stake.ownerPubKey=send.toPubKey
+    # new_stake.value=send.value
+    # new_stake.blockNumber=current_block.latest_block+1
+    # new_stake.SerializeToString()
+    # return new_stake
+    return stakelist
+
+def _set_stake(context,stake_list):
+    #Stake_list is a list of stakes that are to be updated
+    addresses=[]
+    for stake in stake_list:
+        stake.SerializeToString()
+        stk_address=_stake_to_address(stake.ownerPubKey)
+        addresses.append(stk_address)
+    context.set_state(addresses)
+    return
 
 def _set_send(data, context):
     raise NotImplementedError()
