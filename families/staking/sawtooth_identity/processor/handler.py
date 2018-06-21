@@ -275,10 +275,10 @@ def _apply_send(data, context, public_key):
     receiver_sl = _get_data(receiver_address, context)
     receiver_stake_list = StakeList()
     receiver_stake_list.ParseFromString(receiver_sl[0].data)
-    receiver_stake = receiver_stake_list.stakeMap.get_or_create(public_key)
+    receiver_stake = receiver_stake_list.stakeMap.get_or_create(data.toPubKey)
 
     if receiver_stake.blockNumber > current_block:
-        raise InvalidTransaction("The stake at {} is locked".format(public_key))
+        raise InvalidTransaction("The stake at {} is locked".format(data.toPubKey))
     # business logic
     if data.value is 0:
         raise InvalidTransaction("Zero amount transactions are forbidden")
@@ -296,18 +296,26 @@ def _apply_send(data, context, public_key):
 
     # serialize and build the dictionary
     send_stake = {
-        public_key: sender_stake_list.SerializeToString()
+        owner_address: sender_stake_list.SerializeToString()
     }
 
     receive_stake = {
-        data.toPubKey: receiver_stake_list.SerializeToString(),
+        receiver_address: receiver_stake_list.SerializeToString(),
     }
 
     # send
     _set_data(context, **send_stake)
 
+    context.add_event(
+        event_type="stake/update", attributes=[("updated", public_key)])
+    LOGGER.debug("Updated address: \n {}".format(public_key))
+
     # receive
     _set_data(context, **receive_stake)
+
+    context.add_event(
+        event_type="stake/update", attributes=[("updated", data.toPubKey)])
+    LOGGER.debug("Updated address: \n {}".format(data.toPubKey))
 
 
 def _apply_lock(data, context, public_key):

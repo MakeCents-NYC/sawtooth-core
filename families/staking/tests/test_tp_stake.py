@@ -53,12 +53,12 @@ class TestStake(TransactionProcessorTestCase):
             self.factory.create_get_stake_response(public_key, stake),
             recieved)
 
-    def _expect_stake_set(self, stake=None):
+    def _expect_stake_set(self, public_key=None, stake=None):
         recieved = self.validator.expect(
-            self.factory.create_set_stake_request(self._public_key, stake=stake))
+            self.factory.create_set_stake_request(public_key, stake=stake))
 
         self.validator.respond(
-            self.factory.create_mint_stake_response(self._public_key),
+            self.factory.create_mint_stake_response(public_key),
             recieved)
 
     def _expect_mint_stake_set(self, total_supply, public_key):
@@ -129,10 +129,10 @@ class TestStake(TransactionProcessorTestCase):
         self._mint(100.0, self._public_key)
         self._expect_setting_get(MINT_KEY_ADDRESS)
         self._expect_config_get(config=self.factory.create_config(1, oldest_block=1))
-        self._expect_stake_set(stake=self.factory.create_stake(owner_key=self._public_key,
-                                                               value=100.0,
-                                                               block_number=1,
-                                                               nonce=1))
+        self._expect_stake_set(public_key=self._public_key, stake=self.factory.create_stake(owner_key=self._public_key,
+                                                                                            value=100.0,
+                                                                                            block_number=1,
+                                                                                            nonce=1))
         self._expect_add_event(self._public_key)
         self._expect_ok()
 
@@ -156,7 +156,7 @@ class TestStake(TransactionProcessorTestCase):
         # stake = Stake(nonce=1, value=1, blockNumber=1, ownerPubKey=self._public_key)
         # stake_list = self.factory.build_stake_list(stake)
         # self._expect_stake_get(self._public_key, **{self._public_key: stake_list})
-        self._expect_stake_set(stake=self.factory.create_stake(owner_key=self._public_key,
+        self._expect_stake_set(public_key=self._public_key, stake=self.factory.create_stake(owner_key=self._public_key,
                                                                value=1,
                                                                block_number=1000,
                                                                nonce=2))
@@ -188,7 +188,7 @@ class TestStake(TransactionProcessorTestCase):
         # stake = Stake(nonce=1, value=1, blockNumber=1, ownerPubKey=self._public_key)
         # stake_list = self.factory.build_stake_list(stake)
         # self._expect_stake_get(self._public_key, **{self._public_key: stake_list})
-        self._expect_stake_set(stake=self.factory.create_stake(owner_key=self._public_key,
+        self._expect_stake_set(public_key=self._public_key, stake=self.factory.create_stake(owner_key=self._public_key,
                                                                value=1,
                                                                block_number=1000,
                                                                nonce=2))
@@ -221,19 +221,24 @@ class TestStake(TransactionProcessorTestCase):
                                                                                  value=100.0,
                                                                                  block_number=1,
                                                                                  nonce=1))
-        # setting the receiver
-        self._expect_stake_set(stake=self.factory.create_stake(owner_key='foo',
-                                                               value=200.0,
-                                                               block_number=1,
-                                                               nonce=2))
-        self._expect_add_event('foo')
 
         # setting the sender
-        self._expect_stake_set(stake=self.factory.create_stake(owner_key=self._public_key,
+        self._expect_stake_set(public_key=self._public_key, stake=self.factory.create_stake(owner_key=self._public_key,
                                                                value=0,
                                                                block_number=1,
                                                                nonce=2))
+
         self._expect_add_event(self._public_key)
+
+
+        # setting the receiver
+        self._expect_stake_set(public_key='foo', stake=self.factory.create_stake(owner_key='foo',
+                                                               value=200.0,
+                                                               block_number=1,
+                                                               nonce=2))
+
+        self._expect_add_event('foo')
+
 
         self._expect_ok()
     #
