@@ -126,7 +126,8 @@ def _check_allowed_minter(minting_key, context):
     for entry in setting.entries:
         if entry.key == "sawtooth.stake.allowed_keys":
             allowed_signer = entry.value.split(",")
-            if minting_key in allowed_signer:
+            LOGGER.info('minting key: {}'.format(allowed_signer))
+            if minting_key == allowed_signer[0]:
                 return
 
     raise InvalidTransaction(
@@ -213,6 +214,18 @@ def _get_stake(pub_key,context):
             return stake
 
 
+def _build_stake_list(stake, stake_list=None):
+    """
+    This is a utility function for constructing stake lists
+    as well as updating existing ones while preserving state.
+    :param stake: Stake_pb2
+    :param stake_list: StakeList_pb2
+    :return: StakeList_pb2 updated with new stake element.
+    """
+    #TODO(): type check.
+    raise NotImplementedError
+
+
 def _apply_mint(minting_payload, context, public_key):
     """
     The _set_mint function is used to initialize the staking tp.
@@ -240,6 +253,9 @@ def _apply_mint(minting_payload, context, public_key):
     ico_data = {address: stake_list.SerializeToString()}
     _set_data(context, **ico_data)
 
+    context.add_event(
+        event_type="stake/update", attributes=[("updated", public_key)])
+    LOGGER.debug("Updated address: \n {}".format(public_key))
 
 
 def _send_stake(send, context,sender_stake,current_block):
