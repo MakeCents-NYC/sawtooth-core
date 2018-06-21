@@ -31,11 +31,13 @@ def load_default_validator_config():
     return ValidatorConfig(
         bind_network='tcp://127.0.0.1:8800',
         bind_component='tcp://127.0.0.1:4004',
+        bind_consensus='tcp://127.0.0.1:5050',
         endpoint=None,
         peering='static',
         scheduler='serial',
         minimum_peer_connectivity=3,
-        maximum_peer_connectivity=10)
+        maximum_peer_connectivity=10,
+        state_pruning_block_depth=100)
 
 
 def load_toml_validator_config(filename):
@@ -63,18 +65,21 @@ def load_toml_validator_config(filename):
          'network_private_key', 'scheduler', 'permissions', 'roles',
          'opentsdb_url', 'opentsdb_db', 'opentsdb_username',
          'opentsdb_password', 'minimum_peer_connectivity',
-         'maximum_peer_connectivity'])
+         'maximum_peer_connectivity', 'state_pruning_block_depth'])
     if invalid_keys:
         raise LocalConfigurationError(
             "Invalid keys in validator config: "
             "{}".format(", ".join(sorted(list(invalid_keys)))))
     bind_network = None
     bind_component = None
+    bind_consensus = None
     for bind in toml_config.get("bind", []):
         if "network" in bind:
             bind_network = bind[bind.find(":") + 1:]
         if "component" in bind:
             bind_component = bind[bind.find(":") + 1:]
+        if "consensus" in bind:
+            bind_consensus = bind[bind.find(":") + 1:]
 
     network_public_key = None
     network_private_key = None
@@ -88,6 +93,7 @@ def load_toml_validator_config(filename):
     config = ValidatorConfig(
         bind_network=bind_network,
         bind_component=bind_component,
+        bind_consensus=bind_consensus,
         endpoint=toml_config.get("endpoint", None),
         peering=toml_config.get("peering", None),
         seeds=toml_config.get("seeds", None),
@@ -104,7 +110,9 @@ def load_toml_validator_config(filename):
         minimum_peer_connectivity=toml_config.get(
             "minimum_peer_connectivity", None),
         maximum_peer_connectivity=toml_config.get(
-            "maximum_peer_connectivity", None)
+            "maximum_peer_connectivity", None),
+        state_pruning_block_depth=toml_config.get(
+            "state_pruning_block_depth", None)
     )
 
     return config
@@ -118,6 +126,7 @@ def merge_validator_config(configs):
     """
     bind_network = None
     bind_component = None
+    bind_consensus = None
     endpoint = None
     peering = None
     seeds = None
@@ -133,12 +142,15 @@ def merge_validator_config(configs):
     opentsdb_password = None
     minimum_peer_connectivity = None
     maximum_peer_connectivity = None
+    state_pruning_block_depth = None
 
     for config in reversed(configs):
         if config.bind_network is not None:
             bind_network = config.bind_network
         if config.bind_component is not None:
             bind_component = config.bind_component
+        if config.bind_consensus is not None:
+            bind_consensus = config.bind_consensus
         if config.endpoint is not None:
             endpoint = config.endpoint
         if config.peering is not None:
@@ -169,10 +181,13 @@ def merge_validator_config(configs):
             minimum_peer_connectivity = config.minimum_peer_connectivity
         if config.maximum_peer_connectivity is not None:
             maximum_peer_connectivity = config.maximum_peer_connectivity
+        if config.state_pruning_block_depth is not None:
+            state_pruning_block_depth = config.state_pruning_block_depth
 
     return ValidatorConfig(
         bind_network=bind_network,
         bind_component=bind_component,
+        bind_consensus=bind_consensus,
         endpoint=endpoint,
         peering=peering,
         seeds=seeds,
@@ -187,7 +202,8 @@ def merge_validator_config(configs):
         opentsdb_username=opentsdb_username,
         opentsdb_password=opentsdb_password,
         minimum_peer_connectivity=minimum_peer_connectivity,
-        maximum_peer_connectivity=maximum_peer_connectivity)
+        maximum_peer_connectivity=maximum_peer_connectivity,
+        state_pruning_block_depth=state_pruning_block_depth)
 
 
 def parse_permissions(permissions):
@@ -228,6 +244,7 @@ def parse_permissions(permissions):
 
 class ValidatorConfig:
     def __init__(self, bind_network=None, bind_component=None,
+                 bind_consensus=None,
                  endpoint=None, peering=None, seeds=None,
                  peers=None, network_public_key=None,
                  network_private_key=None,
@@ -235,10 +252,12 @@ class ValidatorConfig:
                  roles=None, opentsdb_url=None, opentsdb_db=None,
                  opentsdb_username=None, opentsdb_password=None,
                  minimum_peer_connectivity=None,
-                 maximum_peer_connectivity=None):
+                 maximum_peer_connectivity=None,
+                 state_pruning_block_depth=None):
 
         self._bind_network = bind_network
         self._bind_component = bind_component
+        self._bind_consensus = bind_consensus
         self._endpoint = endpoint
         self._peering = peering
         self._seeds = seeds
@@ -254,6 +273,7 @@ class ValidatorConfig:
         self._opentsdb_password = opentsdb_password
         self._minimum_peer_connectivity = minimum_peer_connectivity
         self._maximum_peer_connectivity = maximum_peer_connectivity
+        self._state_pruning_block_depth = state_pruning_block_depth
 
     @property
     def bind_network(self):
@@ -262,6 +282,10 @@ class ValidatorConfig:
     @property
     def bind_component(self):
         return self._bind_component
+
+    @property
+    def bind_consensus(self):
+        return self._bind_consensus
 
     @property
     def endpoint(self):
@@ -323,19 +347,25 @@ class ValidatorConfig:
     def maximum_peer_connectivity(self):
         return self._maximum_peer_connectivity
 
+    @property
+    def state_pruning_block_depth(self):
+        return self._state_pruning_block_depth
+
     def __repr__(self):
         # not including  password for opentsdb
         return (
-            "{}(bind_network={}, bind_component={}, "
+            "{}(bind_network={}, bind_component={}, bind_consensus={}, "
             "endpoint={}, peering={}, seeds={}, peers={}, "
             "network_public_key={}, network_private_key={}, "
             "scheduler={}, permissions={}, roles={} "
             "opentsdb_url={}, opentsdb_db={}, opentsdb_username={}, "
-            "minimum_peer_connectivity={}, maximum_peer_connectivity={})"
+            "minimum_peer_connectivity={}, maximum_peer_connectivity={}, "
+            "state_pruning_block_depth={})"
         ).format(
             self.__class__.__name__,
             repr(self._bind_network),
             repr(self._bind_component),
+            repr(self._bind_consensus),
             repr(self._endpoint),
             repr(self._peering),
             repr(self._seeds),
@@ -349,12 +379,14 @@ class ValidatorConfig:
             repr(self._opentsdb_db),
             repr(self._opentsdb_username),
             repr(self._minimum_peer_connectivity),
-            repr(self._maximum_peer_connectivity))
+            repr(self._maximum_peer_connectivity),
+            repr(self._state_pruning_block_depth))
 
     def to_dict(self):
         return collections.OrderedDict([
             ('bind_network', self._bind_network),
             ('bind_component', self._bind_component),
+            ('bind_consensus', self._bind_consensus),
             ('endpoint', self._endpoint),
             ('peering', self._peering),
             ('seeds', self._seeds),
@@ -369,7 +401,8 @@ class ValidatorConfig:
             ('opentsdb_username', self._opentsdb_username),
             ('opentsdb_password', self._opentsdb_password),
             ('minimum_peer_connectivity', self._minimum_peer_connectivity),
-            ('maximum_peer_connectivity', self._maximum_peer_connectivity)
+            ('maximum_peer_connectivity', self._maximum_peer_connectivity),
+            ('state_pruning_block_depth', self._state_pruning_block_depth)
         ])
 
     def to_toml_string(self):

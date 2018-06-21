@@ -59,23 +59,28 @@ node ('master') {
 
         // Set the ISOLATION_ID environment variable for the whole pipeline
         env.ISOLATION_ID = sh(returnStdout: true, script: 'printf $BUILD_TAG | sha256sum | cut -c1-64').trim()
+        env.COMPOSE_PROJECT_NAME = sh(returnStdout: true, script: 'printf $BUILD_TAG | sha256sum | cut -c1-64').trim()
 
         // Use a docker container to build and protogen, so that the Jenkins
         // environment doesn't need all the dependencies.
-        stage("Build Test Dependencies") {
-            sh 'docker-compose -f docker-compose-installed.yaml build'
+
+        stage("Build Lint Requirements") {
             sh 'docker-compose -f docker/compose/run-lint.yaml build'
-            sh 'docker-compose -f docker/compose/external.yaml build'
-            sh 'docker build -f docker/bandit -t bandit:$ISOLATION_ID .'
             sh 'docker-compose -f docker/compose/sawtooth-build.yaml up'
+            sh 'docker-compose -f docker/compose/sawtooth-build.yaml down'
         }
 
         stage("Run Lint") {
-            sh 'docker-compose -f docker/compose/run-lint.yaml up lint-python'
-            sh 'docker-compose -f docker/compose/run-lint.yaml up lint-go'
-            sh 'docker-compose -f docker/compose/run-lint.yaml up lint-rust'
-            sh 'docker-compose -f docker/compose/run-lint.yaml up lint-validator'
-            sh 'docker-compose -f docker/compose/run-lint.yaml down'
+            sh 'docker-compose -f docker/compose/run-lint.yaml up --abort-on-container-exit --exit-code-from lint-python lint-python'
+            sh 'docker-compose -f docker/compose/run-lint.yaml up --abort-on-container-exit --exit-code-from lint-go lint-go'
+            sh 'docker-compose -f docker/compose/run-lint.yaml up --abort-on-container-exit --exit-code-from lint-rust lint-rust'
+            sh 'docker-compose -f docker/compose/run-lint.yaml up --abort-on-container-exit --exit-code-from lint-validator lint-validator'
+        }
+
+        stage("Build Test Dependencies") {
+            sh 'docker-compose -f docker-compose-installed.yaml build'
+            sh 'docker-compose -f docker/compose/external.yaml build'
+            sh 'docker build -f docker/bandit -t bandit:$ISOLATION_ID .'
         }
 
         stage("Run Bandit") {
@@ -112,6 +117,7 @@ node ('master') {
             archiveArtifacts artifacts: 'build/bandit.html'
             archiveArtifacts artifacts: 'coverage/html/*'
             archiveArtifacts artifacts: 'docs/build/html/**, docs/build/latex/*.pdf'
+            sh 'docker-compose -f docker/compose/copy-debs.yaml down'
         }
     }
 }

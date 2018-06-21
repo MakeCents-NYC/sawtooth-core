@@ -23,6 +23,8 @@ import threading
 from sawtooth_validator.concurrent.threadpool import \
     InstrumentedThreadPoolExecutor
 from sawtooth_validator.execution.context_manager import ContextManager
+from sawtooth_validator.consensus.notifier import ConsensusNotifier
+from sawtooth_validator.consensus.proxy import ConsensusProxy
 from sawtooth_validator.database.indexed_database import IndexedDatabase
 from sawtooth_validator.database.lmdb_nolock_database import LMDBNoLockDatabase
 from sawtooth_validator.database.native_lmdb import NativeLmdbDatabase
@@ -60,6 +62,7 @@ from sawtooth_validator.journal.receipt_store import TransactionReceiptStore
 
 from sawtooth_validator.server import network_handlers
 from sawtooth_validator.server import component_handlers
+from sawtooth_validator.server import consensus_handlers
 
 LOGGER = logging.getLogger(__name__)
 
@@ -68,6 +71,7 @@ class Validator(object):
     def __init__(self,
                  bind_network,
                  bind_component,
+                 bind_consensus,
                  endpoint,
                  peering,
                  seeds_list,
@@ -79,6 +83,7 @@ class Validator(object):
                  permissions,
                  minimum_peer_connectivity,
                  maximum_peer_connectivity,
+                 state_pruning_block_depth,
                  network_public_key=None,
                  network_private_key=None,
                  roles=None):
@@ -107,7 +112,6 @@ class Validator(object):
             identity_signer (str): cryptographic signer the validator uses for
                 signing
         """
-
         # -- Setup Global State Database and Factory -- #
         global_state_db_filename = os.path.join(
             data_dir, 'merkle-{}.lmdb'.format(bind_network[-2:]))
@@ -262,9 +266,25 @@ class Validator(object):
             to_update=settings_cache.invalidate,
             forked=settings_cache.forked)
 
+        # -- Consensus Engine -- #
+        consensus_thread_pool = InstrumentedThreadPoolExecutor(
+            max_workers=3,
+            name='Consensus')
+        consensus_dispatcher = Dispatcher()
+        consensus_service = Interconnect(
+            bind_consensus,
+            consensus_dispatcher,
+            secured=False,
+            heartbeat=False,
+            max_incoming_connections=20,
+            monitor=True,
+            max_future_callback_workers=10)
+
+        consensus_notifier = ConsensusNotifier(consensus_service)
+
         # -- Setup Journal -- #
         batch_injector_factory = DefaultBatchInjectorFactory(
-            block_store=block_store,
+            block_cache=block_cache,
             state_view_factory=state_view_factory,
             signer=identity_signer)
 
@@ -284,6 +304,8 @@ class Validator(object):
             batch_observers=[batch_tracker],
             batch_injector_factory=batch_injector_factory)
 
+        block_publisher_batch_sender = block_publisher.batch_sender()
+
         block_validator = BlockValidator(
             block_cache=block_cache,
             state_view_factory=state_view_factory,
@@ -297,8 +319,9 @@ class Validator(object):
             block_store=block_store,
             block_cache=block_cache,
             block_validator=block_validator,
+            state_database=global_state_db,
             chain_head_lock=block_publisher.chain_head_lock,
-            on_chain_updated=block_publisher.on_chain_updated,
+            state_pruning_block_depth=state_pruning_block_depth,
             data_dir=data_dir,
             observers=[
                 event_broadcaster,
@@ -322,7 +345,7 @@ class Validator(object):
 
         responder = Responder(completer)
 
-        completer.set_on_batch_received(block_publisher.queue_batch)
+        completer.set_on_batch_received(block_publisher_batch_sender.send)
         completer.set_on_block_received(chain_controller.queue_block)
         completer.set_chain_has_block(chain_controller.has_block)
 
@@ -331,7 +354,7 @@ class Validator(object):
             network_dispatcher, network_service, gossip, completer,
             responder, network_thread_pool, sig_pool,
             chain_controller.has_block, block_publisher.has_batch,
-            permission_verifier, block_publisher)
+            permission_verifier, block_publisher, consensus_notifier)
 
         component_handlers.add(
             component_dispatcher, gossip, context_manager,
@@ -350,6 +373,22 @@ class Validator(object):
         self._network_service = network_service
         self._network_thread_pool = network_thread_pool
 
+        consensus_proxy = ConsensusProxy(
+            block_cache=block_cache,
+            chain_controller=chain_controller,
+            block_publisher=block_publisher,
+            gossip=gossip,
+            identity_signer=identity_signer,
+            settings_view_factory=SettingsViewFactory(state_view_factory),
+            state_view_factory=state_view_factory)
+
+        consensus_handlers.add(
+            consensus_dispatcher, consensus_thread_pool, consensus_proxy)
+
+        self._consensus_dispatcher = consensus_dispatcher
+        self._consensus_service = consensus_service
+        self._consensus_thread_pool = consensus_thread_pool
+
         self._client_thread_pool = client_thread_pool
         self._sig_pool = sig_pool
 
@@ -365,6 +404,8 @@ class Validator(object):
     def start(self):
         self._component_dispatcher.start()
         self._component_service.start()
+        self._consensus_dispatcher.start()
+        self._consensus_service.start()
         if self._genesis_controller.requires_genesis():
             self._genesis_controller.start(self._start)
         else:
@@ -394,6 +435,9 @@ class Validator(object):
         self._network_service.stop()
 
         self._component_service.stop()
+
+        self._consensus_service.stop()
+        self._consensus_dispatcher.stop()
 
         self._network_thread_pool.shutdown(wait=True)
         self._component_thread_pool.shutdown(wait=True)
