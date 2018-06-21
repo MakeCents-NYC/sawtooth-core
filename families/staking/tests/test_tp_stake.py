@@ -129,10 +129,11 @@ class TestStake(TransactionProcessorTestCase):
         self._mint(100.0, self._public_key)
         self._expect_setting_get(MINT_KEY_ADDRESS)
         self._expect_config_get(config=self.factory.create_config(1, oldest_block=1))
-        self._expect_stake_set(public_key=self._public_key, stake=self.factory.create_stake(owner_key=self._public_key,
-                                                                                            value=100.0,
-                                                                                            block_number=1,
-                                                                                            nonce=1))
+        self._expect_stake_set(public_key=self._public_key,
+                               stake=self.factory.create_stake(owner_key=self._public_key,
+                                                               value=100.0,
+                                                               block_number=1,
+                                                               nonce=1))
         self._expect_add_event(self._public_key)
         self._expect_ok()
 
@@ -147,16 +148,19 @@ class TestStake(TransactionProcessorTestCase):
         self._expect_invalid_transaction()
 
     def test_lock_stake_that_is_not_locked(self):
+        """Tests locking stake that is not already locked."""
         self._lock(1000)
-        self._expect_stake_get(public_key=self._public_key, stake=self.factory.create_stake(owner_key=self._public_key,
-                                                                                 value=1,
-                                                                                 block_number=1,
-                                                                                 nonce=1))
+        self._expect_stake_get(public_key=self._public_key,
+                               stake=self.factory.create_stake(owner_key=self._public_key,
+                                                               value=1,
+                                                               block_number=1,
+                                                               nonce=1))
         self._expect_config_get(config=self.factory.create_config(2, oldest_block=1))
         # stake = Stake(nonce=1, value=1, blockNumber=1, ownerPubKey=self._public_key)
         # stake_list = self.factory.build_stake_list(stake)
         # self._expect_stake_get(self._public_key, **{self._public_key: stake_list})
-        self._expect_stake_set(public_key=self._public_key, stake=self.factory.create_stake(owner_key=self._public_key,
+        self._expect_stake_set(public_key=self._public_key,
+                               stake=self.factory.create_stake(owner_key=self._public_key,
                                                                value=1,
                                                                block_number=1000,
                                                                nonce=2))
@@ -168,10 +172,11 @@ class TestStake(TransactionProcessorTestCase):
         Tests locking someone else's stake
         """
         self._lock(1000)
-        self._expect_stake_get(public_key=self._public_key, stake=self.factory.create_stake(owner_key='foo',
-                                                                                 value=1,
-                                                                                 block_number=1,
-                                                                                 nonce=1))
+        self._expect_stake_get(public_key=self._public_key,
+                               stake=self.factory.create_stake(owner_key='foo',
+                                                               value=1,
+                                                               block_number=1,
+                                                               nonce=1))
         self._expect_invalid_transaction()
 
     def test_lock_stake_that_is_already_locked(self):
@@ -180,15 +185,17 @@ class TestStake(TransactionProcessorTestCase):
         """
         # lock the stake
         self._lock(1000)
-        self._expect_stake_get(public_key=self._public_key, stake=self.factory.create_stake(owner_key=self._public_key,
-                                                                                 value=1,
-                                                                                 block_number=1,
-                                                                                 nonce=1))
+        self._expect_stake_get(public_key=self._public_key,
+                               stake=self.factory.create_stake(owner_key=self._public_key,
+                                                               value=1,
+                                                               block_number=1,
+                                                               nonce=1))
         self._expect_config_get(config=self.factory.create_config(2, oldest_block=1))
         # stake = Stake(nonce=1, value=1, blockNumber=1, ownerPubKey=self._public_key)
         # stake_list = self.factory.build_stake_list(stake)
         # self._expect_stake_get(self._public_key, **{self._public_key: stake_list})
-        self._expect_stake_set(public_key=self._public_key, stake=self.factory.create_stake(owner_key=self._public_key,
+        self._expect_stake_set(public_key=self._public_key,
+                               stake=self.factory.create_stake(owner_key=self._public_key,
                                                                value=1,
                                                                block_number=1000,
                                                                nonce=2))
@@ -197,10 +204,11 @@ class TestStake(TransactionProcessorTestCase):
 
         # try to lock it again
         self._lock(10000)
-        self._expect_stake_get(public_key=self._public_key, stake=self.factory.create_stake(owner_key=self._public_key,
-                                                                                 value=1,
-                                                                                 block_number=1000,
-                                                                                 nonce=2))
+        self._expect_stake_get(public_key=self._public_key,
+                               stake=self.factory.create_stake(owner_key=self._public_key,
+                                                               value=1,
+                                                               block_number=1000,
+                                                               nonce=2))
         self._expect_config_get(config=self.factory.create_config(3, oldest_block=1))
         self._expect_invalid_transaction()
 
@@ -210,20 +218,23 @@ class TestStake(TransactionProcessorTestCase):
         """
         self._send('foo', 100.0)
         # getting the sender
-        self._expect_stake_get(public_key=self._public_key, stake=self.factory.create_stake(owner_key=self._public_key,
-                                                                                 value=100.0,
-                                                                                 block_number=1,
-                                                                                 nonce=1))
+        self._expect_stake_get(public_key=self._public_key,
+                               stake=self.factory.create_stake(owner_key=self._public_key,
+                                                               value=100.0,
+                                                                block_number=1,
+                                                                nonce=1))
         # getting the config
         self._expect_config_get(config=self.factory.create_config(100, oldest_block=1))
         # getting the receiver
-        self._expect_stake_get(public_key='foo', stake=self.factory.create_stake(owner_key='foo',
-                                                                                 value=100.0,
-                                                                                 block_number=1,
-                                                                                 nonce=1))
+        self._expect_stake_get(public_key='foo',
+                               stake=self.factory.create_stake(owner_key='foo',
+                                                               value=100.0,
+                                                               block_number=1,
+                                                               nonce=1))
 
         # setting the sender
-        self._expect_stake_set(public_key=self._public_key, stake=self.factory.create_stake(owner_key=self._public_key,
+        self._expect_stake_set(public_key=self._public_key,
+                               stake=self.factory.create_stake(owner_key=self._public_key,
                                                                value=0,
                                                                block_number=1,
                                                                nonce=2))
@@ -232,42 +243,65 @@ class TestStake(TransactionProcessorTestCase):
 
 
         # setting the receiver
-        self._expect_stake_set(public_key='foo', stake=self.factory.create_stake(owner_key='foo',
+        self._expect_stake_set(public_key='foo',
+                               stake=self.factory.create_stake(owner_key='foo',
                                                                value=200.0,
                                                                block_number=1,
                                                                nonce=2))
 
         self._expect_add_event('foo')
-
-
         self._expect_ok()
-    #
-    # def test_send_with_bad_signer(self):
-    #     self._expect_invalid_transaction()
-    #
-    # def test_send_without_value(self):
-    #     self._expect_invalid_transaction()
-    #
-    # def test_send_stake_that_dne(self):
-    #     """
-    #     Tests sending stake from an address that is empty.
-    #     This should return an invalid transaction.
-    #     """
-    #     self._expect_invalid_transaction()
-    #
-    # def test_send_stake_not_owned(self):
-    #     """
-    #     Tests sending stake from an address that exists, but does
-    #     not match the signing key of this transaction. This should
-    #     return an invalid transaction.
-    #     """
-    #     self._expect_invalid_transaction()
-    #
-    # # Admissible but perhaps not desired?
-    # def test_send_stake_without_name(self):
-    #     """
-    #     Tests send stake to a name that doesnt exist
-    #     """
-    #     self._expect_invalid_transaction()
-    #
+
+
+    def test_send_with_bad_signer(self):
+        """
+        Tests sending stake from an address that exists, but does
+        not match the signing key of this transaction. This should
+        return an invalid transaction.
+        """
+        self._send('foo', 100.0)
+        # getting the sender
+        self._expect_stake_get(public_key=self._public_key,
+                               stake=self.factory.create_stake(owner_key='bar',
+                                                               value=100.0,
+                                                               block_number=1,
+                                                               nonce=1))
+
+        self._expect_invalid_transaction()
+
+    def test_send_zero_amount(self):
+        """
+        Tests sending a transaction of zero value.
+        """
+        self._send('foo', 0)
+        # getting the sender
+        self._expect_stake_get(public_key=self._public_key,
+                               stake=self.factory.create_stake(owner_key='bar',
+                                                               value=100.0,
+                                                               block_number=1,
+                                                               nonce=1))
+
+        self._expect_invalid_transaction()
+
+    def test_send_stake_that_dne(self):
+        """
+        Tests sending stake from an address that is empty.
+        This should return an invalid transaction.
+        """
+        pass
+        # self._send('foo', 0)
+        # # getting the sender
+        # self._expect_stake_get(public_key=self._public_key,
+        #                        stake=None)
+        #
+        # self._expect_invalid_transaction()
+
+    def test_send_stake_not_owned(self):
+        """
+        Tests sending stake from an address that exists, but does
+        not match the signing key of this transaction. This should
+        return an invalid transaction.
+        """
+        pass
+        #self._expect_invalid_transaction()
 

@@ -151,15 +151,10 @@ class StakeMessageFactory(object):
     def create_get_stake_response(self, pub_key, stake=None):
         data = None
         if stake is not None:
-                data = self.create_stake(stake=stake)
+            data = self.create_stake(stake=stake)
+
         return self._factory.create_get_response(
             {self._stake_to_address(pub_key): data.SerializeToString()})
-
-    def create_set_lock_request(self, name, policy_name):
-        pass
-
-    def create_set_lock_response(self, name):
-        pass
 
     def create_get_setting_request(self, key):
         addresses = [key]
