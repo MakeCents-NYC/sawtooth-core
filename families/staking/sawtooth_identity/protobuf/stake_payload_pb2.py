@@ -19,7 +19,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   name='stake_payload.proto',
   package='',
   syntax='proto3',
-  serialized_pb=_b('\n\x13stake_payload.proto\"\xf9\x01\n\x0cStakePayload\x12/\n\x0cpayload_type\x18\x01 \x01(\x0e\x32\x19.StakePayload.PayloadType\x12\'\n\x04send\x18\x02 \x01(\x0b\x32\x19.SendStakeTransactionData\x12\'\n\x04lock\x18\x03 \x01(\x0b\x32\x19.LockStakeTransactionData\x12\'\n\x04mint\x18\x04 \x01(\x0b\x32\x19.MintStakeTransactionData\"=\n\x0bPayloadType\x12\x0e\n\nSEND_STAKE\x10\x00\x12\x0e\n\nLOCK_STAKE\x10\x01\x12\x0e\n\nMINT_STAKE\x10\x02\";\n\x18SendStakeTransactionData\x12\x10\n\x08toPubKey\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\t\"/\n\x18LockStakeTransactionData\x12\x13\n\x0b\x62lockNumber\x18\x01 \x01(\x03\"\x8c\x01\n\x18MintStakeTransactionData\x12\x13\n\x0btotalSupply\x18\x01 \x01(\x02\x12/\n\x03ico\x18\x02 \x03(\x0b\x32\".MintStakeTransactionData.IcoEntry\x1a*\n\x08IcoEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\x02:\x02\x38\x01\x42\x33\n\x1fsawtooth.stake_payload.protobufP\x01Z\x0e\x62lock_info_pb2b\x06proto3')
+  serialized_pb=_b('\n\x13stake_payload.proto\"\xf9\x01\n\x0cStakePayload\x12/\n\x0cpayload_type\x18\x01 \x01(\x0e\x32\x19.StakePayload.PayloadType\x12\'\n\x04send\x18\x02 \x01(\x0b\x32\x19.SendStakeTransactionData\x12\'\n\x04lock\x18\x03 \x01(\x0b\x32\x19.LockStakeTransactionData\x12\'\n\x04mint\x18\x04 \x01(\x0b\x32\x19.MintStakeTransactionData\"=\n\x0bPayloadType\x12\x0e\n\nSEND_STAKE\x10\x00\x12\x0e\n\nLOCK_STAKE\x10\x01\x12\x0e\n\nMINT_STAKE\x10\x02\";\n\x18SendStakeTransactionData\x12\x10\n\x08toPubKey\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\x02\"/\n\x18LockStakeTransactionData\x12\x13\n\x0b\x62lockNumber\x18\x01 \x01(\x03\"\x8c\x01\n\x18MintStakeTransactionData\x12\x13\n\x0btotalSupply\x18\x01 \x01(\x02\x12/\n\x03ico\x18\x02 \x03(\x0b\x32\".MintStakeTransactionData.IcoEntry\x1a*\n\x08IcoEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\x02:\x02\x38\x01\x42\x33\n\x1fsawtooth.stake_payload.protobufP\x01Z\x0e\x62lock_info_pb2b\x06proto3')
 )
 
 
@@ -120,8 +120,8 @@ _SENDSTAKETRANSACTIONDATA = _descriptor.Descriptor(
       options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
       name='value', full_name='SendStakeTransactionData.value', index=1,
-      number=2, type=9, cpp_type=9, label=1,
-      has_default_value=False, default_value=_b("").decode('utf-8'),
+      number=2, type=2, cpp_type=6, label=1,
+      has_default_value=False, default_value=float(0),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None, file=DESCRIPTOR),

@@ -178,7 +178,7 @@ class IdentityTransactionHandler(TransactionHandler):
         id_type = payload.payload_type
 
         if id_type == StakePayload.SEND_STAKE:
-            _apply_send(payload.send, context)
+            _apply_send(payload.send, context, signer)
 
         elif id_type == StakePayload.LOCK_STAKE:
             _apply_lock(payload.lock, context, signer)
@@ -239,8 +239,75 @@ def _apply_mint(minting_payload, context, public_key):
     LOGGER.debug("Updated address: \n {}".format(public_key))
 
 
-def _apply_send(data, context):
-    raise NotImplementedError()
+def _apply_send(data, context, public_key):
+    owner_address = _stake_to_address(public_key)
+    # 1st get
+    owner_sl = _get_data(owner_address, context)
+    if not owner_sl:
+        raise InvalidTransaction(
+            "There doesn't appear to be any stake here.")
+    # parse the payload
+    sender_stake_list = StakeList()
+    sender_stake_list.ParseFromString(owner_sl[0].data)
+    sender_stake = sender_stake_list.stakeMap.get_or_create(public_key)
+    # Is this sufficient?
+    if not sender_stake_list.stakeMap[public_key]:
+        raise InvalidTransaction("The signer of this transaction "
+                                 "does not own any stake")
+    # ensure the signer is allowed to do this.
+    _check_allowed_signer(sender_stake.ownerPubKey, public_key)
+
+    # second get
+    # get the block number to make sure this is not locked.
+    current_block = _check_block_number(context)  # the most recent block
+
+    # Is this sufficient?
+    if not sender_stake_list.stakeMap[public_key]:
+        raise InvalidTransaction("The signer of this transaction "
+                                 "does not own any stake")
+
+    # check if the sender stake is locked
+    if sender_stake.blockNumber > current_block:
+        raise InvalidTransaction("The stake at {} is locked".format(public_key))
+
+    # get the receiver stake
+    receiver_address = _stake_to_address(data.toPubKey)
+    receiver_sl = _get_data(receiver_address, context)
+    receiver_stake_list = StakeList()
+    receiver_stake_list.ParseFromString(receiver_sl[0].data)
+    receiver_stake = receiver_stake_list.stakeMap.get_or_create(public_key)
+
+    if receiver_stake.blockNumber > current_block:
+        raise InvalidTransaction("The stake at {} is locked".format(public_key))
+    # business logic
+    if data.value is 0:
+        raise InvalidTransaction("Zero amount transactions are forbidden")
+    if data.value > sender_stake.value:
+        raise InvalidTransaction("Insufficient Balance")
+
+    # Everything checks out, build the updated states
+    # Start with receiver
+    receiver_stake_list.stakeMap[data.toPubKey].nonce += 1
+    receiver_stake_list.stakeMap[data.toPubKey].value += data.value
+
+    # Then sender
+    sender_stake_list.stakeMap[public_key].nonce += 1
+    sender_stake_list.stakeMap[public_key].value -= data.value
+
+    # serialize and build the dictionary
+    send_stake = {
+        public_key: sender_stake_list.SerializeToString()
+    }
+
+    receive_stake = {
+        data.toPubKey: receiver_stake_list.SerializeToString(),
+    }
+
+    # send
+    _set_data(context, **send_stake)
+
+    # receive
+    _set_data(context, **receive_stake)
 
 
 def _apply_lock(data, context, public_key):
@@ -280,8 +347,8 @@ def _apply_lock(data, context, public_key):
     stake_list.stakeMap[public_key].blockNumber = target_lock_block
 
     # submit the state to update to the validator
-    ico_data = {owner_address: stake_list.SerializeToString()}
-    _set_data(context, **ico_data)
+    lock_data = {owner_address: stake_list.SerializeToString()}
+    _set_data(context, **lock_data)
 
     context.add_event(
         event_type="stake/update", attributes=[("updated", public_key)])

@@ -70,9 +70,7 @@ class StakeMessageFactory(object):
         inputs = []
         outputs = []
         if payload.payload_type == StakePayload.SEND_STAKE:
-            send = SendStakeTransactionData()
-            send.ParseFromString(payload.data)
-            #TODO add block_info
+            send = payload.send
             inputs = [
                 # the stake address `from`
                 self._stake_to_address(self._factory.get_public_key()),
@@ -116,6 +114,16 @@ class StakeMessageFactory(object):
 
         payload = StakePayload(payload_type=StakePayload.LOCK_STAKE,
                                lock=lock)
+        return self._create_tp_process_request(payload)
+
+    def create_send_stake_transaction(self, to_public_key, stake_amount):
+        send = SendStakeTransactionData()
+        send.toPubKey = to_public_key
+        send.value = stake_amount
+
+        payload = StakePayload(payload_type=StakePayload.SEND_STAKE,
+                               send=send)
+
         return self._create_tp_process_request(payload)
 
     def create_mint_stake_request(self, total_supply, public_key):
@@ -229,15 +237,6 @@ class StakeMessageFactory(object):
 
 
 
-    # def create_send_stake_transaction(self, to_public_key, stake_amount):
-    #     send = SendStakeTransactionData(toPubKey=to_public_key,
-    #                                     amount=stake_amount)
-    #
-    #     payload = StakePayload(payload_type=StakePayload.SEND,
-    #                            data=send.SerializeToString())
-    #
-    #     return self._create_tp_process_request(payload)
-    #
     # def create_lock_stake_transaction(self, block_number):
     #     lock = LockStakeTransactionData(blockNumber=block_number)
     #     payload = StakePayload(payload_type=StakePayload.LOCK,
