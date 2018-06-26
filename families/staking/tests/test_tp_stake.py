@@ -138,22 +138,139 @@ class TestStake(TransactionProcessorTestCase):
 
 
 
-        # test_send
-        # self._send(50, "asdf")
-        # st_s = {"ownerPubKey": self._public_key, "value": 50}
-        # st_r = {"ownerPubKey": 'asdf', "value": 50}
-        # self._expect_stake_get(self._public_key, **st_)
-        # self._expect_stake_get(self._public_key, **st)
-        # self._expect_stake_set(self._public_key, **st)
-        # self._expect_stake_set(self._public_key, **st)
-        # self._expect_add_event()
-        # self._expect_ok()
-    # def test_send_stake(self):
-    #     """
-    #     Tests sending some stake
-    #     """
-    #     self._expect_ok()
-    #
+        # try to lock it again
+        self._lock(10000)
+        self._expect_stake_get(public_key=self._public_key, stake=self.factory.create_stake(owner_key=self._public_key,
+                                                                                 value=1,
+                                                                                 block_number=1000,
+                                                                                 nonce=2))
+        self._expect_config_get(config=self.factory.create_config(3, oldest_block=1))
+        self._expect_invalid_transaction()
+
+    def test_send_stake(self):
+        """
+        Tests sending some stake
+        """
+        self._send('foo', 100.0)
+        # getting the sender
+        self._expect_stake_get(public_key=self._public_key, stake=self.factory.create_stake(owner_key=self._public_key,
+                                                                                 value=100.0,
+                                                                                 block_number=1,
+                                                                                 nonce=1))
+        # getting the config
+        self._expect_config_get(config=self.factory.create_config(100, oldest_block=1))
+        # getting the receiver
+        self._expect_stake_get(public_key='foo', stake=self.factory.create_stake(owner_key='foo',
+                                                                                 value=100.0,
+                                                                                 block_number=1,
+                                                                                 nonce=1))
+
+        # setting the sender
+        self._expect_stake_set(public_key=self._public_key, stake=self.factory.create_stake(owner_key=self._public_key,
+                                                               value=0,
+                                                               block_number=1,
+                                                               nonce=2))
+
+        self._expect_add_event(self._public_key)
+
+
+        # setting the receiver
+        self._expect_stake_set(public_key='foo', stake=self.factory.create_stake(owner_key='foo',
+                                                               value=200.0,
+                                                               block_number=1,
+                                                               nonce=2))
+
+        self._expect_add_event('foo')
+
+
+        self._expect_ok()
+
+    def test_stake_value(self):
+        """
+        Testing to send value greater than the stake amount
+        :return:
+        """
+        self._send('foo',1000.0)
+        # getting the sender
+        self._expect_stake_get(public_key=self._public_key,stake=self.factory.create_stake(owner_key=self._public_key,
+                                                                                           value=500.0,
+                                                                                           block_number=1,
+                                                                                           nonce=1
+                                                                                           ))
+        # getting the config
+        self._expect_config_get(config=self.factory.create_config(100, oldest_block=1))
+        # getting the receiver
+        self._expect_stake_get(public_key='foo', stake=self.factory.create_stake(owner_key='foo',
+                                                                                 value=100.0,
+                                                                                 block_number=1,
+                                                                                 nonce=1))
+        self._expect_invalid_transaction()
+
+    def test_send_on_lock_stake(self):
+        self._lock(1000)
+        self._expect_stake_get(public_key=self._public_key,
+                              stake=self.factory.create_stake(owner_key=self._public_key,
+                                                             value=1,
+                                                             block_number=1,
+                                                             nonce=1))
+        self._expect_config_get(config=self.factory.create_config(2, oldest_block=1))
+        self._expect_stake_set(public_key=self._public_key,
+                                   stake=self.factory.create_stake(owner_key=self._public_key,
+                                                                   value=1,
+                                                                   block_number=1000,
+                                                                   nonce=2))
+        self._expect_add_event(self._public_key)
+        self._expect_ok()
+
+        self._send('foo', 100.0)
+
+        # # getting the sender
+        self._expect_stake_get(public_key=self._public_key, stake=self.factory.create_stake(owner_key=self._public_key,
+                                                                                            value=100.0,
+                                                                                            block_number=1,nonce=1))
+        # # getting the config
+        self._expect_config_get(config=self.factory.create_config(100, oldest_block=1))
+        # # getting the receiver
+
+        self._expect_stake_get(public_key='foo', stake=self.factory.create_stake(owner_key='foo',
+                                                                                 value=100.0,
+                                                                                 block_number=1,
+                                                                                 nonce=1))
+
+        # # setting the sender
+        self._expect_stake_set(public_key=self._public_key, stake=self.factory.create_stake(owner_key=self._public_key,
+                                                                                            value=0,
+                                                                                            block_number=1,
+                                                                                            nonce=2))
+
+        self._expect_add_event(self._public_key)
+
+        # # setting the receiver
+        self._expect_stake_set(public_key='foo', stake=self.factory.create_stake(owner_key='foo',
+                                                                                 value=200.0,
+                                                                                 block_number=1,
+                                                                                 nonce=2))
+        self._expect_add_event('foo')
+        #self._expect_invalid_transaction()
+        self._expect_ok()
+
+
+
+        #case  1 valid transaction
+        # a. sender and receiver exists and transaction amount is less than sender stake value, sender and receiver stakes are not locked
+        # b. sender exists and transaction amount is less than sender stake value sender is not locked
+        # c. special case where sender attempts to send 0 transaction amount (valid transaction but no change in the stake values and also should the receiver be cretaed if it doesnt exist)
+        # d. zero amount transactions on the chain and its impact
+        # case 2 Invalid transaction
+        # a. invalid signer
+        # b. transaction amount greater than sender stake amount
+        # c.  sender or receiver stakes are locked
+        # d. sender block is greater than current block
+        # case 3: Other cases
+        # a. Transaction amount limit
+        # case 4:  Reporting/ alert cases
+        # a. when do we want to suspect a particular transaction may be a fraud transaction
+
     # def test_send_with_bad_signer(self):
     #     self._expect_invalid_transaction()
     #

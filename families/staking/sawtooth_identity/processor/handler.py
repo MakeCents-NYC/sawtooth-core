@@ -258,14 +258,84 @@ def _apply_mint(minting_payload, context, public_key):
     LOGGER.debug("Updated address: \n {}".format(public_key))
 
 
-def _send_stake(send, context,sender_stake,current_block):
-    if send.toPubKey is None:
-        raise InvalidTransaction("Every stake transaction entry must have ownerPubkey.")
-    if send.value is None:
-        raise InvalidTransaction("Every stake transaction must have a value.")
-    if sender_stake.blockNumber < current_block.latest_block:
-        raise InvalidTransaction("Invalid Block Number")
-    if send.value > sender_stake.value:
+def _mint_list(mint_stakes,context):
+    """
+
+    :param mint_stakes: dictionary of name and stake
+    :param context: connection information of the validator
+    :return: ok
+    """
+    names = mint_stakes.keyset()
+    for sname in names:
+
+        current_block = _check_block_number(context)
+        LOGGER.info('The current block is :{}'.format(current_block))
+        if current_block != 1:
+            raise InvalidTransaction("Minting stake after the genesis block is forbidden.")
+        stake = Stake()
+        stake = mint_stakes[sname]
+        stake_list = StakeList()
+        stake_list.stakeMap.get_or_create(stake.ownerPubKey)
+        _check_allowed_minter(stake.ownerPubKey, context)
+        public_key=stake.ownerPubKey
+        stake_list.stakeMap[public_key].nonce = 1
+        stake_list.stakeMap[public_key].ownerPubKey = public_key
+        stake_list.stakeMap[public_key].value = stake.value
+        stake_list.stakeMap[public_key].blockNumber = current_block
+        # calculate the address to write to
+        address = _stake_to_address(public_key)
+
+        # submit the state to update to the validator
+        ico_data = {address: stake_list.SerializeToString()}
+        _set_data(context, **ico_data)
+
+    return
+
+
+def _apply_send(data, context, public_key):
+    owner_address = _stake_to_address(public_key)
+    # 1st get
+    owner_sl = _get_data(owner_address, context)
+    if not owner_sl:
+        raise InvalidTransaction(
+            "There doesn't appear to be any stake here.")
+    # parse the payload
+    sender_stake_list = StakeList()
+    sender_stake_list.ParseFromString(owner_sl[0].data)
+    sender_stake = sender_stake_list.stakeMap.get_or_create(public_key)
+    # Is this sufficient?
+    if not sender_stake_list.stakeMap[public_key]:
+        raise InvalidTransaction("The signer of this transaction "
+                                 "does not own any stake")
+    # ensure the signer is allowed to do this.
+    _check_allowed_signer(sender_stake.ownerPubKey, public_key)
+
+    # second get
+    # get the block number to make sure this is not locked.
+    current_block = _check_block_number(context)  # the most recent block
+
+    # Is this sufficient?
+    if not sender_stake_list.stakeMap[public_key]:
+        raise InvalidTransaction("The signer of this transaction "
+                                 "does not own any stake")
+
+    # check if the sender stake is locked
+    if sender_stake.blockNumber > current_block:
+        raise InvalidTransaction("The stake at {} is locked".format(public_key))
+
+    # get the receiver stake
+    receiver_address = _stake_to_address(data.toPubKey)
+    receiver_sl = _get_data(receiver_address, context)
+    receiver_stake_list = StakeList()
+    receiver_stake_list.ParseFromString(receiver_sl[0].data)
+    receiver_stake = receiver_stake_list.stakeMap.get_or_create(data.toPubKey)
+
+    if receiver_stake.blockNumber > current_block:
+        raise InvalidTransaction("The stake at {} is locked".format(data.toPubKey))
+    # business logic
+    if data.value is 0:
+        raise InvalidTransaction("Zero amount transactions are forbidden")
+    if data.value > sender_stake.value:
         raise InvalidTransaction("Insufficient Balance")
     receiver_stake = _get_stake(send.toPubKey, context)
     senderstake_list = get_stakelist(sender_stake.ownerPubKey, context)
