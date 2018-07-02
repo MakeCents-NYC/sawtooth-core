@@ -26,7 +26,7 @@ services:
       - $SAWTOOTH_CORE:/project/sawtooth-core
     expose:
       - 4004
-    command: poet-validator-registry-tp -vv -C tcp://test-tp-validator-registry:4004
+    command: truss-validator-registry-tp -vv -C tcp://test-tp-validator-registry:4004
     stop_signal: SIGKILL
     environment:
         PYTHONPATH: "/project/sawtooth-core/consensus/poet/families/:\
@@ -36,7 +36,7 @@ services:
   test-tp-validator-registry:
     build:
       context: ../../../..
-      dockerfile: ./consensus/poet/families/tests/tp-validator-registry-tests.dockerfile
+      dockerfile: ./consensus/truss/families/tests/tp-validator-registry-tests.dockerfile
     image: tp-validator-registry-tests$INSTALL_TYPE:$ISOLATION_ID
     volumes:
       - $SAWTOOTH_CORE:/project/sawtooth-core
@@ -50,10 +50,10 @@ services:
     stop_signal: SIGKILL
     environment:
         TEST_BIND: "tcp://eth0:4004"
-        PYTHONPATH: "/project/sawtooth-core/consensus/poet/families:\
-            /project/sawtooth-core/consensus/poet/families/tests:\
-            /project/sawtooth-core/consensus/poet/families/sawtooth_validator_registry:\
-            /project/sawtooth-core/consensus/poet/common:\
+        PYTHONPATH: "/project/sawtooth-core/consensus/truss/families:\
+            /project/sawtooth-core/consensus/truss/families/tests:\
+            /project/sawtooth-core/consensus/truss/families/sawtooth_validator_registry:\
+            /project/sawtooth-core/consensus/truss/common:\
             /project/sawtooth-core/sdk/python:\
             /project/sawtooth-core/signing:\
             /project/sawtooth-core/integration"

@@ -13,37 +13,31 @@
 # limitations under the License.
 # ------------------------------------------------------------------------------
 import base64
-import json
 import hashlib
-
+import json
 from collections import OrderedDict
 
+from chronoshift.protobuf.chronoshift_registry_pb2 import \
+    CSignUpInfo
+from chronoshift.protobuf.chronoshift_registry_pb2 import \
+    CValidatorInfo
+from chronoshift.protobuf.chronoshift_registry_pb2 import \
+    CValidatorMap
 from cryptography.hazmat import backends
-from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives import hashes
+from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import padding
-
+from sawtooth_poet_common import sgx_structs
+from sawtooth_poet_common.protobuf.validator_registry_pb2 import \
+    ValidatorMap
+from sawtooth_processor_test.message_factory import MessageFactory
+from sawtooth_sdk.protobuf.setting_pb2 import Setting
 from sawtooth_signing import create_context
 from sawtooth_signing.secp256k1 import Secp256k1PrivateKey
 
-from sawtooth_processor_test.message_factory import MessageFactory
 
-from sawtooth_poet_common import sgx_structs
-from sawtooth_poet_common.protobuf.validator_registry_pb2 import \
-    ValidatorInfo
-from sawtooth_poet_common.protobuf.validator_registry_pb2 import \
-    SignUpInfo
-from sawtooth_poet_common.protobuf.validator_registry_pb2 import \
-    ValidatorMap
 
-from sawtooth_sdk.protobuf.setting_pb2 import Setting
-
-_MAX_KEY_PARTS = 2
-_STAKE_TYPE_SIZE = 2
-_ADDRESS_PART_SIZE = 62
-_DEFAULT_TYPE_PREFIX = '00'
-
-class ValidatorRegistryMessageFactory(object):
+class ChronoShiftRegistryMessageFactory(object):
     # The basename and enclave measurement values we will put into the enclave
     # quote in the attestation verification report.
     __VALID_BASENAME__ = \
@@ -114,14 +108,6 @@ class ValidatorRegistryMessageFactory(object):
     def _key_to_address(self, key):
         return self._factory.namespace + \
             self._factory.sha256(key.encode("utf-8"))
-
-    def _to_hash(self, value):
-        return hashlib.sha256(value.encode()).hexdigest()
-
-    # TODO refactor into key_to_address for clarity
-    def _stake_to_address(self, owner_pub):
-        addr_part = self._to_hash(owner_pub)[:_ADDRESS_PART_SIZE]
-        return self._factory.namespace + _DEFAULT_TYPE_PREFIX + addr_part
 
     def create_tp_register(self):
         return self._factory.create_tp_register()
@@ -216,12 +202,13 @@ class ValidatorRegistryMessageFactory(object):
                 evidence_payload={
                     'pse_manifest': pse_manifest.decode()
                 })
-
+        #stake_address=_stake_to_address(public_key)
         return \
-            SignUpInfo(
+            CSignUpInfo(
                 poet_public_key=signup_data['poet_public_key'],
                 proof_data=proof_data,
-                anti_sybil_id=originator_public_key_hash,
+                #anti_sybil_id=originator_public_key_hash,
+                stake_address=originator_public_key_hash,
                 nonce=nonce)
 
     def create_tp_process_request(self, validator_id, payload):
@@ -245,7 +232,7 @@ class ValidatorRegistryMessageFactory(object):
             self, validator_name, transaction_id, signup_info=None):
         if signup_info is None:
             signup_info = self.create_signup_info(self.public_key_hash, "000")
-        data = ValidatorInfo(
+        data = CValidatorInfo(
             name=validator_name,
             id=self.public_key,
             signup_info=signup_info,
@@ -275,12 +262,12 @@ class ValidatorRegistryMessageFactory(object):
 
     def create_get_empty_response_validator_map(self):
         address = self._key_to_address("validator_map")
-        data = ValidatorMap().SerializeToString()
+        data = CValidatorMap().SerializeToString()
         return self._factory.create_get_response({address: data})
 
     def create_get_response_validator_map(self):
         address = self._key_to_address("validator_map")
-        validator_map = ValidatorMap()
+        validator_map = CValidatorMap()
         validator_map.entries.add(key=self.public_key_hash,
                                   value=self.public_key)
         data = validator_map.SerializeToString()
@@ -288,7 +275,7 @@ class ValidatorRegistryMessageFactory(object):
 
     def create_set_request_validator_map(self):
         address = self._key_to_address("validator_map")
-        validator_map = ValidatorMap()
+        validator_map = CValidatorMap()
         validator_map.entries.add(key=self.public_key_hash,
                                   value=self.public_key)
         data = validator_map.SerializeToString()
@@ -378,18 +365,3 @@ fQIDAQAB
             self.create_get_response_enclave_basenames(
                 basenames='b785c58b77152cbe7fd55ee3851c4990'
                           '00000000000000000000000000000000')
-    def create_get_block_request(self,public_key):
-        addresses = [self._key_to_address(public_key)]
-        return self._factory.create_get_request(addresses)
-
-
-    def create_get_block_response(self,pub_key,block=None):
-        data = block
-        #pub_key='foo'
-        # if block is not None:
-        #          data = self.create_stake(block=block)
-        return self._factory.create_get_response(
-            {self._key_to_address(pub_key): data.SerializeToString()})
-
-
-

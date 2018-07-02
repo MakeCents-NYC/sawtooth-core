@@ -258,36 +258,30 @@ def _apply_mint(minting_payload, context, public_key):
     LOGGER.debug("Updated address: \n {}".format(public_key))
 
 
-def _mint_list(mint_stakes,context):
-    """
+def _mint_stake(**kwargs,context,public_key):
 
-    :param mint_stakes: dictionary of name and stake
+    """
+    :param mint_stakes: dictionary of stakes
     :param context: connection information of the validator
     :return: ok
     """
-    names = mint_stakes.keyset()
-    for sname in names:
-
-        current_block = _check_block_number(context)
-        LOGGER.info('The current block is :{}'.format(current_block))
-        if current_block != 1:
-            raise InvalidTransaction("Minting stake after the genesis block is forbidden.")
+    stake_list=StakeList()
+    stake_list.stakeMap.get_or_create(public_key)
+    for data in kwargs.items():
         stake = Stake()
-        stake = mint_stakes[sname]
-        stake_list = StakeList()
-        stake_list.stakeMap.get_or_create(stake.ownerPubKey)
-        _check_allowed_minter(stake.ownerPubKey, context)
+        stake.parseFromString(data)
         public_key=stake.ownerPubKey
         stake_list.stakeMap[public_key].nonce = 1
         stake_list.stakeMap[public_key].ownerPubKey = public_key
         stake_list.stakeMap[public_key].value = stake.value
-        stake_list.stakeMap[public_key].blockNumber = current_block
-        # calculate the address to write to
-        address = _stake_to_address(public_key)
+        stake_list.stakeMap[public_key].blockNumber = 1
 
-        # submit the state to update to the validator
-        ico_data = {address: stake_list.SerializeToString()}
-        _set_data(context, **ico_data)
+    # calculate the address to write to
+    address = _stake_to_address(public_key)
+
+    # submit the state to update to the validator
+    ico_data = {address: stake_list.SerializeToString()}
+    _set_data(context, **ico_data)
 
     return
 

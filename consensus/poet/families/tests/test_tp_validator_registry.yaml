@@ -46,13 +46,13 @@ services:
         -c /project/sawtooth-core/consensus/poet/families/nose2.cfg
         -v
         -s /project/sawtooth-core/integration/sawtooth_integration/tests
-        test_tp_validator_registry
+        test_tp_chronoshift_registry
     stop_signal: SIGKILL
     environment:
         TEST_BIND: "tcp://eth0:4004"
         PYTHONPATH: "/project/sawtooth-core/consensus/poet/families:\
             /project/sawtooth-core/consensus/poet/families/tests:\
-            /project/sawtooth-core/consensus/poet/families/sawtooth_validator_registry:\
+            /project/sawtooth-core/consensus/poet/families/chronoshift_validator_registry:\
             /project/sawtooth-core/consensus/poet/common:\
             /project/sawtooth-core/sdk/python:\
             /project/sawtooth-core/signing:\

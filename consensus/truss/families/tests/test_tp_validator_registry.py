@@ -45,6 +45,7 @@ class TestValidatorRegistry(TransactionProcessorTestCase):
         cls.factory = ValidatorRegistryMessageFactory(
             signer=signer)
 
+
     def _expect_invalid_transaction(self):
         self.validator.expect(
             self.factory.create_tp_response("INVALID_TRANSACTION"))
@@ -825,10 +826,10 @@ class TestValidatorRegistry(TransactionProcessorTestCase):
         # Expect that the transaction will be rejected
         self._expect_invalid_transaction()
 
-    def expect_get_block(self,public_key,block):
+    def test_get_block(self,public_key):
         received=self.validator.expect(
-            self.factory.create_get_stake_request(public_key))
+            self.factory.create_get_block_request(public_key))
 
         self.validator.respond(
-            self.factory.create_get_stake_response((public_key, block),received))
-        self._expect_ok()
+            self.factory.create_get_block_response((public_key),received))
+        #self._expect_ok()

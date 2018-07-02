@@ -44,6 +44,7 @@ import sawtooth_poet_common.protobuf.validator_registry_pb2 as vr_pb
 from sawtooth_poet_common.validator_registry_view.validator_registry_view \
     import ValidatorRegistryView
 
+from sawtooth_identity import IdentityTransactionHandler
 LOGGER = logging.getLogger(__name__)
 
 

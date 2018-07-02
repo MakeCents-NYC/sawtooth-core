@@ -21,9 +21,21 @@ from sawtooth_processor_test.transaction_processor_test_case \
     import TransactionProcessorTestCase
 from validator_reg_message_factory import ValidatorRegistryMessageFactory
 
+from chronoshift_reg_message_factory import ChronoShiftRegistryMessageFactory
+
 from sawtooth_poet_common import sgx_structs
 from sawtooth_poet_common.protobuf.validator_registry_pb2 import \
     ValidatorRegistryPayload
+
+from chronoshift.protobuf.chronoshift_registry_pb2 import \
+    ChronoShiftRegistryPayload
+
+from chronoshift.protobuf.chronoshift_registry_pb2 import \
+    CSignUpInfo
+from chronoshift.protobuf.chronoshift_registry_pb2 import \
+    CValidatorInfo
+from chronoshift.protobuf.chronoshift_registry_pb2 import \
+    CValidatorMap
 
 
 from sawtooth_signing import create_context
@@ -43,7 +55,7 @@ class TestValidatorRegistry(TransactionProcessorTestCase):
         private_key = Secp256k1PrivateKey.from_hex(PRIVATE)
         signer = CryptoFactory(context).new_signer(private_key)
 
-        cls.factory = ValidatorRegistryMessageFactory(
+        cls.factory = ChronoShiftRegistryMessageFactory(
             signer=signer)
 
     def _expect_invalid_transaction(self):
@@ -53,13 +65,15 @@ class TestValidatorRegistry(TransactionProcessorTestCase):
     def _expect_ok(self):
         self.validator.expect(self.factory.create_tp_response("OK"))
 
-    def _test_valid_signup_info(self, signup_info):
+
+    def _test_valid_signup_info1(self, signup_info):
         """
         Testing valid validator_registry transaction.
         """
-        payload = ValidatorRegistryPayload(
+        payload = ChronoShiftRegistryPayload(
             verb="reg", name="val_1", id=self.factory.public_key,
             signup_info=signup_info)
+
         # Send validator registry payload
         transaction_message =\
             self.factory.create_tp_process_request(payload.id, payload)
@@ -128,15 +142,15 @@ class TestValidatorRegistry(TransactionProcessorTestCase):
     def test_valid_signup_info(self):
         signup_info = self.factory.create_signup_info(
             self.factory.public_key_hash, "000")
-        self._test_valid_signup_info(signup_info)
+        self._test_valid_signup_info1(signup_info)
 
         # Re-register the same validator. Expect success.
-        self._test_valid_signup_info(signup_info)
+        self._test_valid_signup_info1(signup_info)
 
     def test_out_of_date_tcb(self):
         signup_info = self.factory.create_signup_info(
             self.factory.public_key_hash, "000", "OUT_OF_DATE")
-        self._test_valid_signup_info(signup_info)
+        self._test_valid_signup_info1(signup_info)
 
     def test_invalid_name(self):
         """
@@ -147,7 +161,7 @@ class TestValidatorRegistry(TransactionProcessorTestCase):
             self.factory.public_key_hash, "000")
 
         # The name is longer the 64 characters
-        payload = ValidatorRegistryPayload(
+        payload = ChronoShiftRegistryPayload(
             verb="reg",
             name="val_11111111111111111111111111111111111111111111111111111111"
                  "11111",
@@ -169,7 +183,7 @@ class TestValidatorRegistry(TransactionProcessorTestCase):
             self.factory.public_key_hash, "000")
 
         # The idea should match the signer_public_key in the transaction_header
-        payload = ValidatorRegistryPayload(
+        payload = ChronoShiftRegistryPayload(
             verb="reg",
             name="val_1",
             id="bad",
@@ -192,7 +206,7 @@ class TestValidatorRegistry(TransactionProcessorTestCase):
 
         signup_info.poet_public_key = "bad"
 
-        payload = ValidatorRegistryPayload(
+        payload = ChronoShiftRegistryPayload(
             verb="reg",
             name="val_1",
             id=self.factory.public_key,
@@ -232,7 +246,7 @@ class TestValidatorRegistry(TransactionProcessorTestCase):
         self._expect_invalid_transaction()
 
     def _test_bad_signup_info(self, signup_info, expect_config=True):
-        payload = ValidatorRegistryPayload(
+        payload = ChronoShiftRegistryPayload(
             verb="reg",
             name="val_1",
             id=self.factory.public_key,
@@ -610,7 +624,7 @@ class TestValidatorRegistry(TransactionProcessorTestCase):
         signup_info = self.factory.create_signup_info(
             self.factory.public_key_hash, "000")
 
-        payload = ValidatorRegistryPayload(
+        payload = ChronoShiftRegistryPayload(
             verb="reg", name="val_1", id=self.factory.public_key,
             signup_info=signup_info)
 
@@ -638,7 +652,7 @@ class TestValidatorRegistry(TransactionProcessorTestCase):
         signup_info = self.factory.create_signup_info(
             self.factory.public_key_hash, "000")
 
-        payload = ValidatorRegistryPayload(
+        payload = ChronoShiftRegistryPayload(
             verb="reg", name="val_1", id=self.factory.public_key,
             signup_info=signup_info)
 
@@ -666,7 +680,7 @@ class TestValidatorRegistry(TransactionProcessorTestCase):
         signup_info = self.factory.create_signup_info(
             self.factory.public_key_hash, "000")
 
-        payload = ValidatorRegistryPayload(
+        payload = ChronoShiftRegistryPayload(
             verb="reg", name="val_1", id=self.factory.public_key,
             signup_info=signup_info)
 
@@ -703,7 +717,7 @@ class TestValidatorRegistry(TransactionProcessorTestCase):
         signup_info = self.factory.create_signup_info(
             self.factory.public_key_hash, "000")
 
-        payload = ValidatorRegistryPayload(
+        payload = ChronoShiftRegistryPayload(
             verb="reg", name="val_1", id=self.factory.public_key,
             signup_info=signup_info)
 
@@ -741,7 +755,7 @@ class TestValidatorRegistry(TransactionProcessorTestCase):
         signup_info = self.factory.create_signup_info(
             self.factory.public_key_hash, "000")
 
-        payload = ValidatorRegistryPayload(
+        payload = ChronoShiftRegistryPayload(
             verb="reg", name="val_1", id=self.factory.public_key,
             signup_info=signup_info)
 
@@ -787,7 +801,7 @@ class TestValidatorRegistry(TransactionProcessorTestCase):
         signup_info = self.factory.create_signup_info(
             self.factory.public_key_hash, "000")
 
-        payload = ValidatorRegistryPayload(
+        payload = ChronoShiftRegistryPayload(
             verb="reg", name="val_1", id=self.factory.public_key,
             signup_info=signup_info)
 
@@ -825,3 +839,5 @@ class TestValidatorRegistry(TransactionProcessorTestCase):
 
         # Expect that the transaction will be rejected
         self._expect_invalid_transaction()
+
+    #def test_valid_stake()

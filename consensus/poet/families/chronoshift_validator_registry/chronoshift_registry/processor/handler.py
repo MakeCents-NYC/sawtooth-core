@@ -31,86 +31,31 @@ from sawtooth_sdk.processor.exceptions import InternalError
 from sawtooth_sdk.protobuf.setting_pb2 import Setting
 
 from sawtooth_poet_common import sgx_structs
-from sawtooth_poet_common.protobuf.validator_registry_pb2 import \
-    ValidatorInfo
-from sawtooth_poet_common.protobuf.validator_registry_pb2 import \
-    ValidatorMap
-from sawtooth_poet_common.protobuf.validator_registry_pb2 import \
-    ValidatorRegistryPayload
-
-from sawtooth_validator.journal.block_store import BlockStore
-from sawtooth_validator.journal.block_wrapper import BlockWrapper
-from sawtooth_validator.protobuf.block_pb2 import \
-    Block
-from sawtooth_block_info.protobuf.block_info_pb2 import BlockInfoConfig
 
 
+from chronoshift.protobuf.chronoshift_registry_pb2 import \
+    CValidatorInfo
+from chronoshift.protobuf.chronoshift_registry_pb2 import \
+    CValidatorMap
+from chronoshift.protobuf.chronoshift_registry_pb2 import \
+    ChronoshiftRegistryPayload
+
+from staking import IdentityTransactionHandler
 
 LOGGER = logging.getLogger(__name__)
 
 STATE_TIMEOUT_SEC = 10
+# VAL_REG_NAMESPACE = \
+#     hashlib.sha256("validator_registry".encode()).hexdigest()[0:6]
+
 VAL_REG_NAMESPACE = \
-    hashlib.sha256("validator_registry".encode()).hexdigest()[0:6]
+    hashlib.sha256("chronoshift".encode('utf-8')).hexdigest()[0:6]
 
 
 # Constants to be used when constructing config namespace addresses
 _CONFIG_NAMESPACE = '000000'
 _CONFIG_MAX_KEY_PARTS = 4
 _CONFIG_ADDRESS_PART_SIZE = 16
-NAMESPACE = '00b10c'
-BLOCK_INFO_NAMESPACE = NAMESPACE + '00'
-BLOCK_CONFIG_ADDRESS = NAMESPACE + '01' + '0' * 62
-
-
-
-
-
-def build_truss_chain(self, transaction,context,chain_head):
-    //Transaction is a new transaction on Makecents Chain
-    // SethTransaction is the latest transaction on Ethereum Chain
-    Block block=get_block(self,transaction)
-    update_block(self,block,sethtransaction)
-    return
-
-def get_block(self,transaction):
-    header=transaction.header
-    key=header.signer_public_key
-    BlockWrapper block_wrapper=BlockStore._get_block(key)
-    Block block=BlockStore.deserialize_block(block_wrapper)
-    return block
-
-def update_block(self,block,sethtransaction,context):
-    //updates the block by adding the reference of Eth chain
-    eth_header=sethtransaction.header
-    signer=eth_header.signer_public_key
-    BlockInfoConfig block_info= get_block_Info(BLOCK_CONFIG_ADDRESS,context)
-    eth_latest_block=block_info.latest_block
-    TrussArray ref=create_TrussArray(eth_latest_block)
-    add_reference(block,ref)
-    return
-def create_TrussArray(eth_latest_block):
-
-    TrussArray tarr=TrussArray()
-    tarr.eBlockRef= eth_latest_block
-    return tarr
-
-def add_reference(block,ref):
-    block.TrussArray=ref
-    return block
-
-
-
-def get_block_info(context):
-    bc = _get_data(BLOCK_CONFIG_ADDRESS, context)
-    if not bc:
-        raise InvalidTransaction(
-            "There doesn't appear to be a block_config stored here."
-            " Are you sure there is a block_info" 
-            " transaction processor component configured?")
-
-    block_config = BlockInfoConfig()
-    block_config.ParseFromString(bc[0].data)
-    return block_config
 
 
 def _config_short_hash(byte_str):
@@ -164,8 +109,8 @@ def _get_state(context, address, value_type):
     return value
 
 
-def _get_address(key):
-    address = VAL_REG_NAMESPACE + hashlib.sha256(key.encode()).hexdigest()
+def _get_address(validator_id):
+    address = VAL_REG_NAMESPACE + hashlib.sha256(validator_id.encode('utf-8')).hexdigest()
     return address
 
 
@@ -174,7 +119,7 @@ def _get_validator_map(context):
     return _get_state(
         context=context,
         address=address,
-        value_type=ValidatorMap)
+        value_type=CValidatorMap)
 
 
 def _update_validator_state(context,
@@ -183,7 +128,7 @@ def _update_validator_state(context,
                             validator_info):
 
     validator_map = _get_validator_map(context)
-    updated_map = ValidatorMap()
+    updated_map = CValidatorMap()
     # Clean out old entries in ValidatorInfo and ValidatorMap
     # Protobuf doesn't offer delete item for ValidatorMap so create a new list
     # Use the validator map to find all occurrences of an anti_sybil_id
@@ -261,6 +206,35 @@ def _get_config_setting(context, key):
 
     raise KeyError('Setting for {} not found'.format(key))
 
+def _update_validator_state1(context,
+                            validator_id,
+                            stake_address,
+                            validator_info):
+
+    validator_map = _get_validator_map(context)
+    updated_map = CValidatorMap()
+    # Clean out old entries in ValidatorInfo and ValidatorMap
+    # Protobuf doesn't offer delete item for ValidatorMap so create a new list
+    # Use the validator map to find all occurrences of an anti_sybil_id
+    # Use any such entry to find the associated validator id.
+    # Use that validator id as the key to remove the ValidatorInfo from the
+    # registry
+    for entry in validator_map.entries:
+        if stake_address == entry.key:
+            validator_info_address = _get_address(entry.value)
+            _delete_address(context, validator_info_address)
+        else:
+            updated_map.entries.add(key=entry.key, value=entry.value)
+
+    # Add new state entries to ValidatorMap and ValidatorInfo
+    updated_map.entries.add(key=stake_address, value=validator_id)
+    validator_map_address = _get_address('validator_map')
+    _set_data(context, validator_map_address, updated_map.SerializeToString())
+
+    validator_info_address = _get_address(validator_id)
+    _set_data(context, validator_info_address, validator_info)
+    LOGGER.info("Validator id %s was added to the validator_map and set.",
+                validator_id)
 
 class ValidatorRegistryTransactionHandler(TransactionHandler):
     def __init__(self):
@@ -278,81 +252,11 @@ class ValidatorRegistryTransactionHandler(TransactionHandler):
     def namespaces(self):
         return [VAL_REG_NAMESPACE]
 
-    def _verify_signup_info(self,
+    def _verify_signup_info1(self,
                             signup_info,
                             originator_public_key_hash,
-                            val_reg_payload,
-                            context):
-
-        # Verify the attestation verification report signature
-        proof_data_dict = json.loads(signup_info.proof_data)
-        verification_report = proof_data_dict.get('verification_report')
-        if verification_report is None:
-            raise ValueError('Verification report is missing from proof data')
-
-        signature = proof_data_dict.get('signature')
-        if signature is None:
-            raise ValueError('Signature is missing from proof data')
-
-        # Try to get the report key from the configuration setting.  If it
-        # is not there or we cannot parse it, fail verification.
-        try:
-            report_public_key_pem = \
-                _get_config_setting(
-                    context=context,
-                    key='sawtooth.poet.report_public_key_pem')
-            report_public_key = \
-                serialization.load_pem_public_key(
-                    report_public_key_pem.encode(),
-                    backend=backends.default_backend())
-        except KeyError:
-            raise \
-                ValueError(
-                    'Report public key configuration setting '
-                    '(sawtooth.poet.report_public_key_pem) not found.')
-        except (TypeError, ValueError) as error:
-            raise ValueError('Failed to parse public key: {}'.format(error))
-
-        # Retrieve the valid enclave measurement values, converting the comma-
-        # delimited list. If it is not there, or fails to parse correctly,
-        # fail verification.
-        try:
-            valid_measurements = \
-                _get_config_setting(
-                    context=context,
-                    key='sawtooth.poet.valid_enclave_measurements')
-            valid_enclave_mesaurements = \
-                [bytes.fromhex(m) for m in valid_measurements.split(',')]
-        except KeyError:
-            raise \
-                ValueError(
-                    'Valid enclave measurements configuration setting '
-                    '(sawtooth.poet.valid_enclave_measurements) not found.')
-        except ValueError as error:
-            raise \
-                ValueError(
-                    'Failed to parse enclave measurement: {}'.format(
-                        valid_measurements))
-
-        # Retrieve the valid enclave basename value. If it is not there, or
-        # fails to parse correctly, fail verification.
-        try:
-            valid_basenames = \
-                _get_config_setting(
-                    context=context,
-                    key='sawtooth.poet.valid_enclave_basenames')
-            valid_enclave_basenames = \
-                [bytes.fromhex(b) for b in valid_basenames.split(',')]
-        except KeyError:
-            raise \
-                ValueError(
-                    'Valid enclave basenames configuration setting '
-                    '(sawtooth.poet.valid_enclave_basenames) not found.')
-        except ValueError:
-            raise \
-                ValueError(
-                    'Failed to parse enclave basename: {}'.format(
-                        valid_basenames))
+                            chrono_reg_payload,
+                            context,verification_report,report_public_key,signature):
 
         try:
             report_public_key.verify(
@@ -363,6 +267,7 @@ class ValidatorRegistryTransactionHandler(TransactionHandler):
         except InvalidSignature:
             raise ValueError('Verification report signature is invalid')
 
+        proof_data_dict = json.loads(signup_info.proof_data)
         verification_report_dict = json.loads(verification_report)
 
         # Verify that the verification report contains an ID field
@@ -376,15 +281,14 @@ class ValidatorRegistryTransactionHandler(TransactionHandler):
             raise \
                 ValueError(
                     'Verification report does not contain an EPID pseudonym')
-
-        if epid_pseudonym != signup_info.anti_sybil_id:
+        if epid_pseudonym != signup_info.stake_address:
             raise \
                 ValueError(
-                    'The anti-Sybil ID in the verification report [{0}] does '
+                    'The Stake Address in the verification report [{0}] does '
                     'not match the one contained in the signup information '
                     '[{1}]'.format(
                         epid_pseudonym,
-                        signup_info.anti_sybil_id))
+                        signup_info.stake_address))
 
         # Verify that the verification report contains a PSE manifest status
         # and it is OK
@@ -516,43 +420,60 @@ class ValidatorRegistryTransactionHandler(TransactionHandler):
         # Verify that the nonce in the verification report matches the nonce
         # in the transaction payload submitted
         nonce = verification_report_dict.get('nonce', '')
-        if nonce != val_reg_payload.signup_info.nonce:
+        if nonce != chrono_reg_payload.signup_info.nonce:
             raise \
                 ValueError(
                     'AVR nonce [{0}] does not match signup info nonce '
                     '[{1}]'.format(
                         nonce,
-                        val_reg_payload.signup_info.nonce))
+                        chrono_reg_payload.signup_info.nonce))
+
+
 
     def apply(self, transaction, context):
+
         txn_header = transaction.header
         public_key = txn_header.signer_public_key
 
-        val_reg_payload = ValidatorRegistryPayload()
-        val_reg_payload.ParseFromString(transaction.payload)
+        chrono_payload = ChronoshiftRegistryPayload()
+        chrono_payload.ParseFromString(transaction.payload)
+        signup_info = chrono_payload.signup_info;
 
-        # Check name
-        validator_name = val_reg_payload.name
+        #step 1: Verify attestation certificate
+
+        verification_report,report_public_key=_verify_attestation(signup_info,context)
+        if verification_report is None:
+            raise InvalidTransaction(
+                'Attestation Not Verified')
+
+
+        # step 2: Verify  validator_name requirements
+        validator_name = chrono_payload.name
         if len(validator_name) > 64:
             raise InvalidTransaction(
                 'Illegal validator name {}'.format(validator_name))
 
-        # Check registering validator matches transaction signer.
-        validator_id = val_reg_payload.id
+
+
+        # step 3:  Check registering validator matches transaction signer.
+        # and also check if the validator id matches the public key of stake
+        validator_id = chrono_payload.id
         if validator_id != public_key:
             raise InvalidTransaction(
                 'Signature mismatch on validator registration with validator'
                 ' {} signed by {}'.format(validator_id, public_key))
 
         public_key_hash = hashlib.sha256(public_key.encode()).hexdigest()
-        signup_info = val_reg_payload.signup_info
+
+
+        #step 4: Verify the sign up Info
 
         try:
-            self._verify_signup_info(
+            self._verify_signup_info1(
                 signup_info=signup_info,
                 originator_public_key_hash=public_key_hash,
-                val_reg_payload=val_reg_payload,
-                context=context)
+                chrono_reg_payload=chrono_payload,
+                context=context,verification_report=verification_report,report_public_key=report_public_key)
 
         except ValueError as error:
             raise InvalidTransaction(
@@ -560,14 +481,89 @@ class ValidatorRegistryTransactionHandler(TransactionHandler):
                     signup_info,
                     error))
 
-        validator_info = ValidatorInfo(
+        validator_info = CValidatorInfo(
             name=validator_name,
             id=validator_id,
-            signup_info=val_reg_payload.signup_info,
+            signup_info=chrono_payload.signup_info,
             transaction_id=transaction.signature
         )
 
-        _update_validator_state(context,
+        _update_validator_state1(context,
                                 validator_id,
-                                signup_info.anti_sybil_id,
+                                signup_info.stake_address,
                                 validator_info.SerializeToString())
+
+
+    def _verify_attestation(signup_info,context):
+
+        # Verify the attestation verification report signature
+        proof_data_dict = json.loads(signup_info.proof_data)
+        verification_report = proof_data_dict.get('verification_report')
+        if verification_report is None:
+            raise ValueError('Verification report is missing from proof data')
+
+        signature = proof_data_dict.get('signature')
+        if signature is None:
+            raise ValueError('Signature is missing from proof data')
+
+            # Try to get the report key from the configuration setting.  If it
+        # is not there or we cannot parse it, fail verification.
+        try:
+            report_public_key_pem = \
+                _get_config_setting(
+                        context=context,
+                        key='sawtooth.poet.report_public_key_pem')
+            report_public_key = \
+                serialization.load_pem_public_key(
+                report_public_key_pem.encode(),
+                backend=backends.default_backend())
+        except KeyError:
+            raise \
+                ValueError(
+                    'Report public key configuration setting '
+                    '(sawtooth.poet.report_public_key_pem) not found.')
+        except (TypeError, ValueError) as error:
+            raise ValueError('Failed to parse public key: {}'.format(error))
+
+        # Retrieve the valid enclave measurement values, converting the comma-
+        # delimited list. If it is not there, or fails to parse correctly,
+        # fail verification.
+        try:
+            valid_measurements = \
+                _get_config_setting(context=context,
+                                    key='sawtooth.poet.valid_enclave_measurements')
+            valid_enclave_mesaurements = \
+                [bytes.fromhex(m) for m in valid_measurements.split(',')]
+        except KeyError:
+            raise \
+                ValueError(
+                    'Valid enclave measurements configuration setting '
+                    '(sawtooth.poet.valid_enclave_measurements) not found.')
+        except ValueError as error:
+            raise \
+                ValueError(
+                    'Failed to parse enclave measurement: {}'.format(
+                        valid_measurements))
+
+        # Retrieve the valid enclave basename value. If it is not there, or
+        # fails to parse correctly, fail verification.
+        try:
+            valid_basenames = \
+                _get_config_setting(
+                context=context,
+                key='sawtooth.poet.valid_enclave_basenames')
+            valid_enclave_basenames = \
+                [bytes.fromhex(b) for b in valid_basenames.split(',')]
+        except KeyError:
+            raise \
+                ValueError(
+                    'Valid enclave basenames configuration setting '
+                    '(sawtooth.poet.valid_enclave_basenames) not found.')
+        except ValueError:
+            raise \
+                ValueError(
+                    'Failed to parse enclave basename: {}'.format(
+                        valid_basenames))
+
+        return verification_report,report_public_key
+
