@@ -37,6 +37,7 @@ sys.path.insert(0, os.path.join(
     'signing'))
 
 from sawtooth_validator_registry.validator_registry.processor.main import main
+#from chronoshift_validator_registry.validator_registry.processor.main import main
 
 if __name__ == '__main__':
     main()

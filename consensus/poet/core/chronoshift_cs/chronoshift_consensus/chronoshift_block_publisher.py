@@ -25,30 +25,49 @@ from sawtooth_validator.journal.consensus.consensus \
 import sawtooth_validator.protobuf.transaction_pb2 as txn_pb
 from sawtooth_validator.state.settings_view import SettingsView
 
-from sawtooth_poet.poet_consensus import poet_enclave_factory as factory
-from sawtooth_poet.poet_consensus.consensus_state import ConsensusState
-from sawtooth_poet.poet_consensus.consensus_state_store \
-    import ConsensusStateStore
-from sawtooth_poet.poet_consensus.poet_settings_view import PoetSettingsView
-from sawtooth_poet.poet_consensus.signup_info import SignupInfo
-from sawtooth_poet.poet_consensus.poet_key_state_store \
-    import PoetKeyState
-from sawtooth_poet.poet_consensus.poet_key_state_store \
-    import PoetKeyStateStore
-from sawtooth_poet.poet_consensus.wait_timer import WaitTimer
-from sawtooth_poet.poet_consensus.wait_certificate import WaitCertificate
-from sawtooth_poet.poet_consensus import utils
+# from sawtooth_poet.poet_consensus import poet_enclave_factory as factory
+# from sawtooth_poet.poet_consensus.consensus_state import ConsensusState
+# from sawtooth_poet.poet_consensus.consensus_state_store \
+#     import ConsensusStateStore
+# from sawtooth_poet.poet_consensus.poet_settings_view import PoetSettingsView
+# from sawtooth_poet.poet_consensus.signup_info import SignupInfo
+# from sawtooth_poet.poet_consensus.poet_key_state_store \
+#     import PoetKeyState
+# from sawtooth_poet.poet_consensus.poet_key_state_store \
+#     import PoetKeyStateStore
+# from sawtooth_poet.poet_consensus.wait_timer import WaitTimer
+# from sawtooth_poet.poet_consensus.wait_certificate import WaitCertificate
+# from sawtooth_poet.poet_consensus import utils
 
-import sawtooth_poet_common.protobuf.validator_registry_pb2 as vr_pb
+from chronoshift_cs.chronoshift_consensus import chronoshift_enclave_factory as factory
+from chronoshift_cs.chronoshift_consensus.consensus_state import ConsensusState
+from chronoshift_cs.chronoshift_consensus.consensus_state_store \
+    import ConsensusStateStore
+from chronoshift_cs.chronoshift_consensus.chronoshift_settings_view import ChronoShiftSettingsView
+from chronoshift_cs.chronoshift_consensus.signup_info import SignupInfo
+from chronoshift_cs.chronoshift_consensus.chronoshift_key_state_store \
+    import ChronoShiftKeyState
+from chronoshift_cs.chronoshift_consensus.chronoshift_key_state_store \
+    import ChronoShiftKeyStateStore
+from chronoshift_cs.chronoshift_consensus.wait_timer import WaitTimer
+from chronoshift_cs.chronoshift_consensus.wait_certificate import WaitCertificate
+from chronoshift_cs.chronoshift_consensus import utils
+
+#import sawtooth_poet_common.protobuf.validator_registry_pb2 as vr_pb
+
 
 from sawtooth_poet_common.validator_registry_view.validator_registry_view \
     import ValidatorRegistryView
 
+from chronoshift.protobuf.chronoshift_registry_pb2 import ChronoShiftRegistryPayload
+from chronoshift.protobuf.chronoshift_registry_pb2 import CSignUpInfo
+from chronoshift.protobuf.chronoshift_registry_pb2 import CValidatorInfo
+from chronoshift.protobuf.chronoshift_registry_pb2 import CValidatorMap
 
 LOGGER = logging.getLogger(__name__)
 
 
-class PoetBlockPublisher(BlockPublisherInterface):
+class ChronoShiftBlockPublisher(BlockPublisherInterface):
     """Consensus objects provide the following services to the Journal:
     1) Build candidate blocks ( this temporary until the block types are
     combined into a single block type)
@@ -110,13 +129,13 @@ class PoetBlockPublisher(BlockPublisherInterface):
             ConsensusStateStore(
                 data_dir=self._data_dir,
                 validator_id=self._validator_id)
-        self._poet_key_state_store = \
-            PoetKeyStateStore(
+        self._chronoshift_key_state_store = \
+            ChronoShiftKeyStateStore(
                 data_dir=self._data_dir,
                 validator_id=self._validator_id)
         self._wait_timer = None
 
-    def _register_signup_information(self, block_header, poet_enclave_module):
+    def _register_signup_information(self, block_header,chronoshift_enclave_module):
         # Create signup information for this validator, putting the block ID
         # of the block previous to the block referenced by block_header in the
         # nonce.  Block ID is better than wait certificate ID for testing
@@ -127,20 +146,21 @@ class PoetBlockPublisher(BlockPublisherInterface):
         nonce = SignupInfo.block_id_to_nonce(block_header.previous_block_id)
         signup_info = \
             SignupInfo.create_signup_info(
-                poet_enclave_module=poet_enclave_module,
+                chronoshift_enclave_module=chronoshift_enclave_module,
                 originator_public_key_hash=public_key_hash,
                 nonce=nonce)
 
-        # Create the validator registry payload
+        # Create the Chronoshift registry payload
         payload = \
-            vr_pb.ValidatorRegistryPayload(
+            ChronoShiftRegistryPayload(
                 verb='register',
                 name='validator-{}'.format(block_header.signer_public_key[:8]),
                 id=block_header.signer_public_key,
-                signup_info=vr_pb.SignUpInfo(
+                signup_info=CSignUpInfo(
                     poet_public_key=signup_info.poet_public_key,
                     proof_data=signup_info.proof_data,
-                    anti_sybil_id=signup_info.anti_sybil_id,
+                    #anti_sybil_id=signup_info.anti_sybil_id,
+                    stake_address=signup_info.stake_address,
                     nonce=nonce),
             )
         serialized = payload.SerializeToString()
@@ -148,7 +168,7 @@ class PoetBlockPublisher(BlockPublisherInterface):
         # Create the address that will be used to look up this validator
         # registry transaction.  Seems like a potential for refactoring..
         validator_entry_address = \
-            PoetBlockPublisher._validator_registry_namespace + \
+            ChronoShiftBlockPublisher._validator_registry_namespace + \
             hashlib.sha256(block_header.signer_public_key.encode()).hexdigest()
 
         # Create a transaction header and transaction for the validator
@@ -156,7 +176,7 @@ class PoetBlockPublisher(BlockPublisherInterface):
         # send out.
         output_addresses = \
             [validator_entry_address,
-             PoetBlockPublisher._validator_map_address]
+             ChronoShiftBlockPublisher._validator_map_address]
         input_addresses = \
             output_addresses + \
             [SettingsView.setting_address(
@@ -206,14 +226,14 @@ class PoetBlockPublisher(BlockPublisherInterface):
             signup_info.poet_public_key[-8:],
             signup_info.sealed_signup_data[:8],
             signup_info.sealed_signup_data[-8:])
-        self._poet_key_state_store[signup_info.poet_public_key] = \
-            PoetKeyState(
+        self._chronoshift_key_state_store[signup_info.poet_public_key] = \
+            ChronoShiftKeyState(
                 sealed_signup_data=signup_info.sealed_signup_data,
                 has_been_refreshed=False,
                 signup_nonce=nonce)
-        self._poet_key_state_store.active_key = signup_info.poet_public_key
+        self._chronoshift_key_state_store.active_key = signup_info.poet_public_key
 
-    def _handle_registration_timeout(self, block_header, poet_enclave_module,
+    def _handle_registration_timeout(self, block_header, chronoshift_enclave_module,
                                      state_view, signup_nonce,
                                      poet_public_key):
         # See if a registration attempt has timed out. Assumes the caller has
@@ -225,11 +245,11 @@ class PoetBlockPublisher(BlockPublisherInterface):
                 block_cache=self._block_cache,
                 state_view_factory=self._state_view_factory,
                 consensus_state_store=self._consensus_state_store,
-                poet_enclave_module=poet_enclave_module)
-        poet_settings_view = PoetSettingsView(state_view)
+                chronoshift_enclave_module=chronoshift_enclave_module)
+        chronoshift_settings_view = ChronoShiftSettingsView(state_view)
 
         if consensus_state.signup_attempt_timed_out(
-                signup_nonce, poet_settings_view, self._block_cache):
+                signup_nonce, chronoshift_settings_view, self._block_cache):
             LOGGER.error('My poet registration using PPK %s has not '
                          'committed by block %s. Create new registration',
                          poet_public_key,
@@ -238,7 +258,7 @@ class PoetBlockPublisher(BlockPublisherInterface):
             del self._poet_key_state_store[poet_public_key]
             self._register_signup_information(
                 block_header=block_header,
-                poet_enclave_module=poet_enclave_module)
+                chronoshift_enclave_module=chronoshift_enclave_module)
 
     def initialize_block(self, block_header):
         """Do initialization necessary for the consensus to claim a block,
@@ -257,9 +277,9 @@ class PoetBlockPublisher(BlockPublisherInterface):
         # doing all of the checking again, simply short-circuit the failure so
         # that the validator can go do something more useful.
         if block_header.previous_block_id == \
-                PoetBlockPublisher._previous_block_id:
+                ChronoShiftBlockPublisher._previous_block_id:
             return False
-        PoetBlockPublisher._previous_block_id = block_header.previous_block_id
+        ChronoShiftBlockPublisher._previous_block_id = block_header.previous_block_id
 
         # Using the current chain head, we need to create a state view so we
         # can create a PoET enclave.
@@ -268,11 +288,14 @@ class PoetBlockPublisher(BlockPublisherInterface):
                 block_wrapper=self._block_cache.block_store.chain_head,
                 state_view_factory=self._state_view_factory)
 
-        poet_enclave_module = \
-            factory.PoetEnclaveFactory.get_poet_enclave_module(
+        chronoshift_enclave_module = \
+            factory.ChronoShiftEnclaveFactory.get_chronoshift_enclave_module(
                 state_view=state_view,
                 config_dir=self._config_dir,
                 data_dir=self._data_dir)
+
+
+
 
         # Get our validator registry entry to see what PoET public key
         # other validators think we are using.
@@ -291,7 +314,7 @@ class PoetBlockPublisher(BlockPublisherInterface):
         # key.  If we don't have one, then we need to sign up.  If we do have
         # one, then our validator registry entry has not percolated through the
         # system, so nothing to to but wait.
-        active_poet_public_key = self._poet_key_state_store.active_key
+        active_poet_public_key = self._chronoshift_key_state_store.active_key
         if validator_info is None:
             if active_poet_public_key is None:
                 LOGGER.debug(
@@ -299,7 +322,7 @@ class PoetBlockPublisher(BlockPublisherInterface):
                     'information')
                 self._register_signup_information(
                     block_header=block_header,
-                    poet_enclave_module=poet_enclave_module)
+                    chronoshift_enclave_module=chronoshift_enclave_module)
             else:  # Check if we need to give up on this registration attempt
                 try:
                     nonce = self._poet_key_state_store[
@@ -313,7 +336,7 @@ class PoetBlockPublisher(BlockPublisherInterface):
 
                 self._handle_registration_timeout(
                     block_header=block_header,
-                    poet_enclave_module=poet_enclave_module,
+                    chronoshift_enclave_module=chronoshift_enclave_module,
                     state_view=state_view,
                     signup_nonce=nonce,
                     poet_public_key=active_poet_public_key
@@ -325,7 +348,7 @@ class PoetBlockPublisher(BlockPublisherInterface):
         poet_key_state = None
         try:
             poet_key_state = \
-                self._poet_key_state_store[
+                self._chronoshift_key_state_store[
                     validator_info.signup_info.poet_public_key]
         except (ValueError, KeyError):
             pass
@@ -342,7 +365,8 @@ class PoetBlockPublisher(BlockPublisherInterface):
                 validator_info.signup_info.poet_public_key[-8:])
             self._register_signup_information(
                 block_header=block_header,
-                poet_enclave_module=poet_enclave_module)
+                chronoshift_enclave_module=chronoshift_enclave_module)
+
 
             # We need to put fake information in the key state store for the
             # PoET public key the other validators think we are using so that
@@ -350,9 +374,9 @@ class PoetBlockPublisher(BlockPublisherInterface):
             # that key state store entry as being refreshed so that we will
             # never actually try to use it.
             dummy_data = b64encode(b'No sealed signup data').decode('utf-8')
-            self._poet_key_state_store[
+            self._chronoshift_key_state_store[
                 validator_info.signup_info.poet_public_key] = \
-                PoetKeyState(
+                ChronoShiftKeyState(
                     sealed_signup_data=dummy_data,
                     has_been_refreshed=True,
                     signup_nonce='unknown')
@@ -372,7 +396,7 @@ class PoetBlockPublisher(BlockPublisherInterface):
             # Check if we need to give up on this registration attempt
             self._handle_registration_timeout(
                 block_header=block_header,
-                poet_enclave_module=poet_enclave_module,
+                chronoshift_enclave_module=chronoshift_enclave_module,
                 state_view=state_view,
                 signup_nonce=poet_key_state.signup_nonce,
                 poet_public_key=active_poet_public_key
@@ -384,13 +408,13 @@ class PoetBlockPublisher(BlockPublisherInterface):
         if validator_info.signup_info.poet_public_key != \
                 active_poet_public_key:
             active_poet_public_key = validator_info.signup_info.poet_public_key
-            self._poet_key_state_store.active_key = active_poet_public_key
+            self._chronoshift_key_state_store.active_key = active_poet_public_key
 
         # Ensure that the enclave is using the appropriate keys
         try:
             unsealed_poet_public_key = \
                 SignupInfo.unseal_signup_data(
-                    poet_enclave_module=poet_enclave_module,
+                    chronoshift_enclave_module=chronoshift_enclave_module,
                     sealed_signup_data=poet_key_state.sealed_signup_data)
         except SystemError:
             # Signup data is unuseable
@@ -418,15 +442,15 @@ class PoetBlockPublisher(BlockPublisherInterface):
                 block_cache=self._block_cache,
                 state_view_factory=self._state_view_factory,
                 consensus_state_store=self._consensus_state_store,
-                poet_enclave_module=poet_enclave_module)
-        poet_settings_view = PoetSettingsView(state_view)
+                chronoshift_enclave_module=chronoshift_enclave_module)
+        chronoshift_settings_view = ChronoShiftSettingsView(state_view)
 
         # If our signup information does not pass the freshness test, then we
         # know that other validators will reject any blocks we try to claim so
         # we need to try to sign up again.
         if consensus_state.validator_signup_was_committed_too_late(
                 validator_info=validator_info,
-                poet_settings_view=poet_settings_view,
+                chronoshift_settings_view=chronoshift_settings_view,
                 block_cache=self._block_cache):
             LOGGER.info(
                 'Reject building on block %s: Validator signup information '
@@ -434,7 +458,7 @@ class PoetBlockPublisher(BlockPublisherInterface):
                 block_header.previous_block_id[:8])
             self._register_signup_information(
                 block_header=block_header,
-                poet_enclave_module=poet_enclave_module)
+                chronoshift_enclave_module=chronoshift_enclave_module)
             return False
 
         # Using the consensus state for the block upon which we want to
@@ -443,7 +467,7 @@ class PoetBlockPublisher(BlockPublisherInterface):
         # we need to check if the key has been refreshed.
         if consensus_state.validator_has_claimed_block_limit(
                 validator_info=validator_info,
-                poet_settings_view=poet_settings_view):
+                chronoshift_settings_view=chronoshift_settings_view):
             # Because we have hit the limit, check to see if we have already
             # submitted a validator registry transaction with new signup
             # information, and therefore a new PoET public key.  If not, then
@@ -452,7 +476,8 @@ class PoetBlockPublisher(BlockPublisherInterface):
             # hit the key block claim limit, we won't even bother initializing
             # a block on this chain as it will be rejected by other
             # validators.
-            poet_key_state = self._poet_key_state_store[active_poet_public_key]
+            #poet_key_state = self._poet_key_state_store[active_poet_public_key]
+            poet_key_state=self._chronoshift_key_state_store[active_poet_public_key]
             if not poet_key_state.has_been_refreshed:
                 LOGGER.info(
                     'Reached block claim limit for key: %s...%s',
@@ -461,8 +486,8 @@ class PoetBlockPublisher(BlockPublisherInterface):
 
                 sealed_signup_data = poet_key_state.sealed_signup_data
                 signup_nonce = poet_key_state.signup_nonce
-                self._poet_key_state_store[active_poet_public_key] = \
-                    PoetKeyState(
+                self._chronoshift_key_state_store[active_poet_public_key] = \
+                    ChronoShiftKeyState(
                         sealed_signup_data=sealed_signup_data,
                         has_been_refreshed=True,
                         signup_nonce=signup_nonce)
@@ -474,12 +499,12 @@ class PoetBlockPublisher(BlockPublisherInterface):
                 # only at a block depth where finality probability
                 # is high.
                 SignupInfo.release_signup_data(
-                    poet_enclave_module=poet_enclave_module,
+                    chronoshift_enclave_module=chronoshift_enclave_module,
                     sealed_signup_data=sealed_signup_data)
 
                 self._register_signup_information(
                     block_header=block_header,
-                    poet_enclave_module=poet_enclave_module)
+                    chronoshift_enclave_module=chronoshift_enclave_module)
 
             LOGGER.info(
                 'Reject building on block %s: Validator has reached maximum '
@@ -494,7 +519,7 @@ class PoetBlockPublisher(BlockPublisherInterface):
                 validator_info=validator_info,
                 block_number=block_header.block_num,
                 validator_registry_view=validator_registry_view,
-                poet_settings_view=poet_settings_view,
+                chronoshift_settings_view=chronoshift_settings_view,
                 block_store=self._block_cache.block_store):
             LOGGER.info(
                 'Reject building on block %s: Validator has not waited long '
@@ -504,21 +529,21 @@ class PoetBlockPublisher(BlockPublisherInterface):
 
         # We need to create a wait timer for the block...this is what we
         # will check when we are asked if it is time to publish the block
-        poet_key_state = self._poet_key_state_store[active_poet_public_key]
+        poet_key_state = self._chronoshift_key_state_store[active_poet_public_key]
         sealed_signup_data = poet_key_state.sealed_signup_data
         previous_certificate_id = \
             utils.get_previous_certificate_id(
                 block_header=block_header,
                 block_cache=self._block_cache,
-                poet_enclave_module=poet_enclave_module)
+                chronoshift_enclave_module=chronoshift_enclave_module)
         wait_timer = \
             WaitTimer.create_wait_timer(
-                poet_enclave_module=poet_enclave_module,
+                chronoshift_enclave_module=chronoshift_enclave_module,
                 sealed_signup_data=sealed_signup_data,
                 validator_address=block_header.signer_public_key,
                 previous_certificate_id=previous_certificate_id,
                 consensus_state=consensus_state,
-                poet_settings_view=poet_settings_view)
+                chronoshift_settings_view=chronoshift_settings_view)
 
         # NOTE - we do the zTest after we create the wait timer because we
         # need its population estimate to see if this block would be accepted
@@ -531,11 +556,11 @@ class PoetBlockPublisher(BlockPublisherInterface):
         if consensus_state.validator_is_claiming_too_frequently(
                 validator_info=validator_info,
                 previous_block_id=block_header.previous_block_id,
-                poet_settings_view=poet_settings_view,
+                chronoshift_settings_view=chronoshift_settings_view,
                 population_estimate=wait_timer.population_estimate(
-                    poet_settings_view=poet_settings_view),
+                    chronoshift_settings_view=chronoshift_settings_view),
                 block_cache=self._block_cache,
-                poet_enclave_module=poet_enclave_module):
+                chronoshift_enclave_module=chronoshift_enclave_module):
             LOGGER.info(
                 'Reject building on block %s: '
                 'Validator (signing public key: %s) is claiming blocks '
@@ -549,7 +574,7 @@ class PoetBlockPublisher(BlockPublisherInterface):
         # policies.
 
         self._wait_timer = wait_timer
-        PoetBlockPublisher._previous_block_id = None
+        ChronoShiftBlockPublisher._previous_block_id = None
 
         LOGGER.debug('Created wait timer: %s', self._wait_timer)
 
@@ -595,21 +620,24 @@ class PoetBlockPublisher(BlockPublisherInterface):
                 block_wrapper=self._block_cache.block_store.chain_head,
                 state_view_factory=self._state_view_factory)
 
-        poet_enclave_module = \
-            factory.PoetEnclaveFactory.get_poet_enclave_module(
+        chronoshift_enclave_module = \
+            factory.ChronoShiftEnclaveFactory.get_chronoshift_enclave_module(
                 state_view=state_view,
                 config_dir=self._config_dir,
                 data_dir=self._data_dir)
 
         # We need to create a wait certificate for the block and then serialize
         # that into the block header consensus field.
-        active_key = self._poet_key_state_store.active_key
-        poet_key_state = self._poet_key_state_store[active_key]
+        # active_key = self._poet_key_state_store.active_key
+        # poet_key_state = self._poet_key_state_store[active_key]
+        # sealed_signup_data = poet_key_state.sealed_signup_data
+        active_key = self._chronoshift_key_state_store.active_key
+        poet_key_state = self._chronoshift_key_state_store[active_key]
         sealed_signup_data = poet_key_state.sealed_signup_data
         try:
             wait_certificate = \
                 WaitCertificate.create_wait_certificate(
-                    poet_enclave_module=poet_enclave_module,
+                    chronoshift_enclave_module=chronoshift_enclave_module,
                     sealed_signup_data=sealed_signup_data,
                     wait_timer=self._wait_timer,
                     block_hash=block_hash)

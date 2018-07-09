@@ -34,6 +34,7 @@ setup(
         'sawtooth-poet-core',
         'sawtooth-signing',
         'sawtooth-validator',
+
         'toml',
     ],
     entry_points={
