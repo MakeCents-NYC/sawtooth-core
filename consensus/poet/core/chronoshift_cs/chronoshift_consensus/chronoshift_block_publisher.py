@@ -56,8 +56,10 @@ from chronoshift_cs.chronoshift_consensus import utils
 #import sawtooth_poet_common.protobuf.validator_registry_pb2 as vr_pb
 
 
-from sawtooth_poet_common.validator_registry_view.validator_registry_view \
-    import ValidatorRegistryView
+# from sawtooth_poet_common.validator_registry_view.validator_registry_view \
+#     import ValidatorRegistryView
+from chronoshift.chronoshift_registry_view.chronoshift_registry_view \
+    import ChronoShiftRegistryView
 
 from chronoshift.protobuf.chronoshift_registry_pb2 import ChronoShiftRegistryPayload
 from chronoshift.protobuf.chronoshift_registry_pb2 import CSignUpInfo
@@ -299,14 +301,17 @@ class ChronoShiftBlockPublisher(BlockPublisherInterface):
 
         # Get our validator registry entry to see what PoET public key
         # other validators think we are using.
-        validator_registry_view = ValidatorRegistryView(state_view)
+        #validator_registry_view = ValidatorRegistryView(state_view)
+        chronoshift_registry_view=ChronoShiftRegistryView(state_view)
         validator_info = None
 
         try:
             validator_id = block_header.signer_public_key
             validator_info = \
-                validator_registry_view.get_validator_info(
+                chronoshift_registry_view.get_validator_info(
                     validator_id=validator_id)
+                # validator_registry_view.get_validator_info(
+                #     validator_id=validator_id)
         except KeyError:
             pass
 
@@ -518,7 +523,8 @@ class ChronoShiftBlockPublisher(BlockPublisherInterface):
         if consensus_state.validator_is_claiming_too_early(
                 validator_info=validator_info,
                 block_number=block_header.block_num,
-                validator_registry_view=validator_registry_view,
+                chronoshift_registry_view=chronoshift_registry_view,
+                #validator_registry_view=validator_registry_view,
                 chronoshift_settings_view=chronoshift_settings_view,
                 block_store=self._block_cache.block_store):
             LOGGER.info(

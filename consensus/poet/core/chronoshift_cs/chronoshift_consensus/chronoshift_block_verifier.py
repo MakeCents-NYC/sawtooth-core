@@ -34,8 +34,11 @@ from chronoshift_cs.chronoshift_consensus import chronoshift_enclave_factory as 
 from chronoshift_cs.chronoshift_consensus import utils
 
 
-from sawtooth_poet_common.validator_registry_view.validator_registry_view \
-    import ValidatorRegistryView
+# from sawtooth_poet_common.validator_registry_view.validator_registry_view \
+#     import ValidatorRegistryView
+
+from chronoshift.chronoshift_registry_view.chronoshift_registry_view \
+    import ChronoShiftRegistryView
 
 
 
@@ -119,12 +122,13 @@ class ChronoShiftBlockVerifier(BlockVerifierInterface):
                 config_dir=self._config_dir,
                 data_dir=self._data_dir)
 
-        validator_registry_view = ValidatorRegistryView(state_view)
+        #validator_registry_view = ValidatorRegistryView(state_view)
+        chronoshift_registry_view = ChronoShiftRegistryView(state_view)
         # Grab the validator info based upon the block signer's public
         # key
         try:
             validator_info = \
-                validator_registry_view.get_validator_info(
+                chronoshift_registry_view.get_validator_info(
                     block_wrapper.header.signer_public_key)
         except KeyError:
             LOGGER.error(
@@ -220,7 +224,8 @@ class ChronoShiftBlockVerifier(BlockVerifierInterface):
         if consensus_state.validator_is_claiming_too_early(
                 validator_info=validator_info,
                 block_number=block_wrapper.block_num,
-                validator_registry_view=validator_registry_view,
+                #validator_registry_view=validator_registry_view,
+                chronoshift_registry_view=chronoshift_registry_view,
                 chronoshift_settings_view=chronoshift_settings_view,
                 block_store=self._block_cache.block_store):
             LOGGER.error(
@@ -244,5 +249,18 @@ class ChronoShiftBlockVerifier(BlockVerifierInterface):
                 'frequently.',
                 block_wrapper.identifier[:8])
             return False
+
+        #Reject the block if the sign up information associated with the stake address
+        #does not control of minimum amount of stake
+        # if ~ consensus_state.validator_signup_control_stake(
+        #         validator_info=validator_info):
+        #     return False
+        #
+        # # Reject the block if the stake is not locked
+        # if ~ consensus_state.validator_signup_locked_stake(
+        #         validator_info=validator_info,
+        #         chronoshift_enclave_module=chronoshift_enclave_module):
+        #     return False
+
 
         return True

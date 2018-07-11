@@ -40,7 +40,7 @@ from chronoshift.protobuf.chronoshift_registry_pb2 import \
 from chronoshift.protobuf.chronoshift_registry_pb2 import \
     ChronoshiftRegistryPayload
 
-from staking import IdentityTransactionHandler
+#from staking import IdentityTransactionHandler
 
 LOGGER = logging.getLogger(__name__)
 

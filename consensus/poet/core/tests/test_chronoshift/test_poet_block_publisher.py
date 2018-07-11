@@ -69,7 +69,7 @@ class TestChronoShiftBlockPublisher(TestCase):
     @mock.patch('chronoshift_cs.chronoshift_consensus.chronoshift_block_publisher.'
                 'ConsensusState')
     @mock.patch('chronoshift_cs.chronoshift_consensus.chronoshift_block_publisher.'
-                'ValidatorRegistryView')
+                'ChronoShiftRegistryView')
     @mock.patch('chronoshift_cs.chronoshift_consensus.chronoshift_block_publisher.utils')
     def test_no_validator_registry(
             self,
@@ -167,7 +167,7 @@ class TestChronoShiftBlockPublisher(TestCase):
     @mock.patch('chronoshift_cs.chronoshift_consensus.chronoshift_block_publisher.'
                 'ConsensusState')
     @mock.patch('chronoshift_cs.chronoshift_consensus.chronoshift_block_publisher.'
-                'ValidatorRegistryView')
+                'ChronoShiftRegistryView')
     @mock.patch('chronoshift_cs.chronoshift_consensus.chronoshift_block_publisher.utils')
     def test_signup_info_not_committed_within_allowed_delay(
             self,
@@ -293,7 +293,7 @@ class TestChronoShiftBlockPublisher(TestCase):
     @mock.patch('chronoshift_cs.chronoshift_consensus.chronoshift_block_publisher.'
                 'ConsensusState')
     @mock.patch('chronoshift_cs.chronoshift_consensus.chronoshift_block_publisher.'
-                'ValidatorRegistryView')
+                'ChronoShiftRegistryView')
     @mock.patch('chronoshift_cs.chronoshift_consensus.chronoshift_block_publisher.utils')
     def test_k_policy(
             self,
@@ -421,7 +421,7 @@ class TestChronoShiftBlockPublisher(TestCase):
     @mock.patch('chronoshift_cs.chronoshift_consensus.chronoshift_block_publisher.'
                 'ConsensusState')
     @mock.patch('chronoshift_cs.chronoshift_consensus.chronoshift_block_publisher.'
-                'ValidatorRegistryView')
+                'ChronoShiftRegistryView')
     @mock.patch('chronoshift_cs.chronoshift_consensus.chronoshift_block_publisher.utils')
     def test_c_policy(
             self,
@@ -535,7 +535,7 @@ class TestChronoShiftBlockPublisher(TestCase):
     @mock.patch('chronoshift_cs.chronoshift_consensus.chronoshift_block_publisher.'
                 'ConsensusState')
     @mock.patch('chronoshift_cs.chronoshift_consensus.chronoshift_block_publisher.'
-                'ValidatorRegistryView')
+                'ChronoShiftRegistryView')
     @mock.patch('chronoshift_cs.chronoshift_consensus.chronoshift_block_publisher.utils')
     def test_z_policy(
             self,
@@ -647,7 +647,7 @@ class TestChronoShiftBlockPublisher(TestCase):
     @mock.patch('chronoshift_cs.chronoshift_consensus.chronoshift_block_publisher.'
                 'ConsensusState')
     @mock.patch('chronoshift_cs.chronoshift_consensus.chronoshift_block_publisher.'
-                'ValidatorRegistryView')
+                'ChronoShiftRegistryView')
     @mock.patch('chronoshift_cs.chronoshift_consensus.chronoshift_block_publisher.utils')
     def test_block_publisher_success_case(
             self,
@@ -747,7 +747,7 @@ class TestChronoShiftBlockPublisher(TestCase):
     @mock.patch('chronoshift_cs.chronoshift_consensus.chronoshift_block_publisher.'
                 'ConsensusState')
     @mock.patch('chronoshift_cs.chronoshift_consensus.chronoshift_block_publisher.'
-                'ValidatorRegistryView')
+                'ChronoShiftRegistryView')
     @mock.patch('chronoshift_cs.chronoshift_consensus.chronoshift_block_publisher.utils')
     def test_block_publisher_claim_readiness(
             self,
@@ -858,7 +858,7 @@ class TestChronoShiftBlockPublisher(TestCase):
     @mock.patch('chronoshift_cs.chronoshift_consensus.chronoshift_block_publisher.'
                 'ConsensusState')
     @mock.patch('chronoshift_cs.chronoshift_consensus.chronoshift_block_publisher.'
-                'ValidatorRegistryView')
+                'ChronoShiftRegistryView')
     @mock.patch('chronoshift_cs.chronoshift_consensus.chronoshift_block_publisher.utils')
     def test_block_publisher_doesnt_claim_readiness(
             self,

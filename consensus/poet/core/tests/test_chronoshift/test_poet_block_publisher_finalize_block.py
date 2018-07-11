@@ -70,7 +70,7 @@ class TestPoetBlockPublisher(TestCase):
     @mock.patch('chronoshift_cs.chronoshift_consensus.chronoshift_block_publisher.'
                 'ConsensusState')
     @mock.patch('chronoshift_cs.chronoshift_consensus.chronoshift_block_publisher.'
-                'ValidatorRegistryView')
+                'ChronoShiftRegistryView')
     @mock.patch('chronoshift_cs.chronoshift_consensus.chronoshift_block_publisher.utils')
     def test_block_publisher_doesnt_finalize_block(
             self,
@@ -170,7 +170,7 @@ class TestPoetBlockPublisher(TestCase):
     @mock.patch('chronoshift_cs.chronoshift_consensus.chronoshift_block_publisher.'
                 'ConsensusState')
     @mock.patch('chronoshift_cs.chronoshift_consensus.chronoshift_block_publisher.'
-                'ValidatorRegistryView')
+                'ChronoShiftRegistryView')
     @mock.patch('chronoshift_cs.chronoshift_consensus.chronoshift_block_publisher.utils')
     def test_block_publisher_finalize_block(
             self,

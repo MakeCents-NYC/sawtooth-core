@@ -29,5 +29,6 @@ setup(
     packages=find_packages(),
     install_requires=[
         'protobuf',
+        'sawtooth-sdk',
     ],
     entry_points={})

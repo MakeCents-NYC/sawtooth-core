@@ -57,7 +57,7 @@ class TestChronoShiftResolver(TestCase):
     @mock.patch('chronoshift_cs.chronoshift_consensus.chronoshift_fork_resolver.'
                 'ConsensusState')
     @mock.patch('chronoshift_cs.chronoshift_consensus.chronoshift_fork_resolver.'
-                'ValidatorRegistryView')
+                'ChronoShiftRegistryView')
     @mock.patch('chronoshift_cs.chronoshift_consensus.chronoshift_fork_resolver.utils')
     def test_new_fork_head_not_poet_block(
             self,
@@ -125,7 +125,7 @@ class TestChronoShiftResolver(TestCase):
     @mock.patch('chronoshift_cs.chronoshift_consensus.chronoshift_fork_resolver.'
                 'ConsensusState')
     @mock.patch('chronoshift_cs.chronoshift_consensus.chronoshift_fork_resolver.'
-                'ValidatorRegistryView')
+                'ChronoShiftRegistryView')
     @mock.patch('chronoshift_cs.chronoshift_consensus.chronoshift_fork_resolver.utils')
     def test_cur_fork_head_not_poet_block(
             self,
@@ -234,7 +234,7 @@ class TestChronoShiftResolver(TestCase):
     @mock.patch('chronoshift_cs.chronoshift_consensus.chronoshift_fork_resolver.'
                 'ConsensusState')
     @mock.patch('chronoshift_cs.chronoshift_consensus.chronoshift_fork_resolver.'
-                'ValidatorRegistryView')
+                'ChronoShiftRegistryView')
     @mock.patch('chronoshift_cs.chronoshift_consensus.chronoshift_fork_resolver.utils')
     def test_both_valid_poet_blocks(
             self,
@@ -394,7 +394,7 @@ class TestChronoShiftResolver(TestCase):
     @mock.patch('chronoshift_cs.chronoshift_consensus.chronoshift_fork_resolver.'
                 'ConsensusState')
     @mock.patch('chronoshift_cs.chronoshift_consensus.chronoshift_fork_resolver.'
-                'ValidatorRegistryView')
+                'ChronoShiftRegistryView')
     @mock.patch('chronoshift_cs.chronoshift_consensus.chronoshift_fork_resolver.utils')
     def test_different_previous_block_id(
             self,

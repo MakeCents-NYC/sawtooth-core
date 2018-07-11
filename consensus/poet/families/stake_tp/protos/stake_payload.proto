@@ -1,0 +1,38 @@
+syntax = "proto3";
+
+option java_multiple_files = true;
+option java_package = "sawtooth.stake_payload.protobuf";
+option go_package = "block_info_pb2";
+
+
+message StakePayload {
+    // Used to type the message coming into transaction
+    // processor.
+
+    // verbs
+    enum PayloadType {
+        SEND_STAKE = 0;
+        LOCK_STAKE = 1;
+        MINT_STAKE = 2;
+    }
+
+    //The type from above
+    PayloadType payload_type = 1;
+    SendStakeTransactionData send = 2;
+    LockStakeTransactionData lock = 3;
+    MintStakeTransactionData mint = 4;
+}
+
+message SendStakeTransactionData {
+    string toPubKey = 1;
+    float value = 2;
+}
+
+message LockStakeTransactionData {
+    int64 blockNumber = 1;
+}
+
+message MintStakeTransactionData {
+    float totalSupply = 1;
+    map<string, float> ico = 2;
+}

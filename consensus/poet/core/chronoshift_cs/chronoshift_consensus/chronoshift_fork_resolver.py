@@ -29,8 +29,11 @@ from chronoshift_cs.chronoshift_consensus import chronoshift_enclave_factory as 
 from chronoshift_cs.chronoshift_consensus import utils
 from chronoshift_cs.chronoshift_consensus.chronoshift_settings_view import ChronoShiftSettingsView
 
-from sawtooth_poet_common.validator_registry_view.validator_registry_view \
-    import ValidatorRegistryView
+# from sawtooth_poet_common.validator_registry_view.validator_registry_view \
+#     import ValidatorRegistryView
+
+from chronoshift.chronoshift_registry_view.chronoshift_registry_view \
+    import ChronoShiftRegistryView
 
 from sawtooth_validator.journal.block_wrapper import BlockWrapper
 from sawtooth_validator.journal.consensus.consensus \
@@ -270,12 +273,13 @@ class ChronoShiftForkResolver(ForkResolverInterface):
                     block_wrapper=previous_block,
                     state_view_factory=self._state_view_factory)
 
-            validator_registry_view = ValidatorRegistryView(state_view)
+            #validator_registry_view = ValidatorRegistryView(state_view)
+            chronoshift_registry_view = ChronoShiftRegistryView(state_view)
             try:
                 # Get the validator info for the validator that claimed the
                 # fork head
                 validator_info = \
-                    validator_registry_view.get_validator_info(
+                    chronoshift_registry_view.get_validator_info(
                         new_fork_head.header.signer_public_key)
 
                 # Get the consensus state for the new fork head's previous

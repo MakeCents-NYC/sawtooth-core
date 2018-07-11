@@ -32,10 +32,24 @@ from chronoshift_cs.chronoshift_consensus.chronoshift_settings_view import Chron
 from chronoshift_cs.chronoshift_consensus.signup_info import SignupInfo
 
 
-from sawtooth_poet_common.validator_registry_view.validator_registry_view \
-    import ValidatorRegistryView
+
+# from sawtooth_poet_common.validator_registry_view.validator_registry_view \
+#     import ValidatorRegistryView
+from chronoshift.chronoshift_registry_view.chronoshift_registry_view \
+    import ChronoShiftRegistryView
+
+from chronoshift_simulator.chronoshift_enclave_simulator.chronoshift_enclave_simulator \
+    import _ChronoShiftEnclaveSimulator
+
+from stake.protobuf.stake_pb2 import Stake
+from stake.protobuf.stake_payload_pb2 import StakePayload
+
+#from stake_tp.staking.processor.handler import StakeTransactionHandler
+
+
 
 LOGGER = logging.getLogger(__name__)
+
 
 ValidatorState = \
     collections.namedtuple(
@@ -70,6 +84,7 @@ class ConsensusState(object):
 
     # MINIMUM_WAIT_TIME must match the constants in the enclaves
     MINIMUM_WAIT_TIME = 1.0
+    MIN_STAKE_AMT = 5.0
 
     _BlockInfo = \
         collections.namedtuple(
@@ -185,10 +200,12 @@ class ConsensusState(object):
                 state_view = \
                     state_view_factory.create_view(
                         state_root_hash=block.state_root_hash)
-                validator_registry_view = \
-                    ValidatorRegistryView(state_view=state_view)
+                chronoshift_registry_view=\
+                    ChronoShiftRegistryView(state_view=state_view)
+                # validator_registry_view = \
+                #     ValidatorRegistryView(state_view=state_view)
                 validator_info = \
-                    validator_registry_view.get_validator_info(
+                    chronoshift_registry_view.get_validator_info(
                         validator_id=block.header.signer_public_key)
 
                 LOGGER.debug(
@@ -741,7 +758,7 @@ class ConsensusState(object):
     def validator_is_claiming_too_early(self,
                                         validator_info,
                                         block_number,
-                                        validator_registry_view,
+                                        chronoshift_registry_view,
                                         chronoshift_settings_view,
                                         block_store):
         """Determines if a validator has tried to claim a block too early
@@ -776,7 +793,7 @@ class ConsensusState(object):
         # a block.  If the block claim delay was greater than or equal to
         # the number of validators, at this point no validators would be
         # able to claim a block.
-        number_of_validators = len(validator_registry_view.get_validators())
+        number_of_validators = len(chronoshift_registry_view.get_validators())
         block_claim_delay = \
             min(chronoshift_settings_view.block_claim_delay, number_of_validators - 1)
 
@@ -945,6 +962,8 @@ class ConsensusState(object):
 
         return False
 
+
+
     def serialize_to_bytes(self):
         """Serialized the consensus state object to a byte string suitable
         for storage
@@ -1063,3 +1082,20 @@ class ConsensusState(object):
                 self.total_block_claim_count,
                 self._population_samples,
                 validators)
+
+
+    # def validator_signup_control_stake(self,validator_info):
+    #     signup_info=_ChronoShiftEnclaveSimulator.deserialize_signup_info(validator_info.signup_info)
+    #     stake_address=signup_info.stake_address
+    #     public_key=signup_info.poet_public_key
+    #     stake=StakeTransactionHandler._get_stake(public_key,context)
+    #     if stake.amount < self.MIN_STAKE_AMT:
+    #         return False
+    #     return True
+    #
+    # def validator_signup_locked_stake(self,stake,context):
+    #     if stake.blockNumber > current_block:
+    #         return False
+    #     return True
+
+

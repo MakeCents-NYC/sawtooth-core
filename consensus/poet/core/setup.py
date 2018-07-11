@@ -33,6 +33,8 @@ setup(name='sawtooth-poet-core',
           'sawtooth-poet-simulator',
           'sawtooth-signing',
           'sawtooth-validator',
+          'sawtooth-sdk'
+          'stake-tp'
 
       ],
       entry_points={})

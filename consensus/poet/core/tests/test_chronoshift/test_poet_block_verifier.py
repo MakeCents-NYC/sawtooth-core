@@ -56,7 +56,7 @@ class TestPoetBlockVerifier(TestCase):
     @mock.patch(
         'chronoshift_cs.chronoshift_consensus.chronoshift_block_verifier.ConsensusState')
     @mock.patch('chronoshift_cs.chronoshift_consensus.chronoshift_block_verifier.'
-                'ValidatorRegistryView')
+                'ChronoShiftRegistryView')
     @mock.patch('chronoshift_cs.chronoshift_consensus.chronoshift_block_verifier.utils')
     def test_non_poet_block(self,
                             mock_utils,
@@ -119,7 +119,7 @@ class TestPoetBlockVerifier(TestCase):
     @mock.patch(
         'chronoshift_cs.chronoshift_consensus.chronoshift_block_verifier.ConsensusState')
     @mock.patch('chronoshift_cs.chronoshift_consensus.chronoshift_block_verifier.'
-                'ValidatorRegistryView')
+                'ChronoShiftRegistryView')
     @mock.patch('chronoshift_cs.chronoshift_consensus.chronoshift_block_verifier.utils')
     def test_invalid_wait_certificate(self,
                                       mock_utils,
@@ -182,7 +182,7 @@ class TestPoetBlockVerifier(TestCase):
     @mock.patch(
         'chronoshift_cs.chronoshift_consensus.chronoshift_block_verifier.ConsensusState')
     @mock.patch('chronoshift_cs.chronoshift_consensus.chronoshift_block_verifier.'
-                'ValidatorRegistryView')
+                'ChronoShiftRegistryView')
     @mock.patch('chronoshift_cs.chronoshift_consensus.chronoshift_block_verifier.utils')
     def test_block_claimed_by_unknown_validator(self,
                                                 mock_utils,
@@ -249,7 +249,7 @@ class TestPoetBlockVerifier(TestCase):
     @mock.patch(
         'chronoshift_cs.chronoshift_consensus.chronoshift_block_verifier.ConsensusState')
     @mock.patch('chronoshift_cs.chronoshift_consensus.chronoshift_block_verifier.'
-                'ValidatorRegistryView')
+                'ChronoShiftRegistryView')
     @mock.patch('chronoshift_cs.chronoshift_consensus.chronoshift_block_verifier.utils')
     def test_signup_info_not_committed_within_allowed_delay(
             self,
@@ -322,7 +322,7 @@ class TestPoetBlockVerifier(TestCase):
     @mock.patch(
         'chronoshift_cs.chronoshift_consensus.chronoshift_block_verifier.ConsensusState')
     @mock.patch('chronoshift_cs.chronoshift_consensus.chronoshift_block_verifier.'
-                'ValidatorRegistryView')
+                'ChronoShiftRegistryView')
     @mock.patch('chronoshift_cs.chronoshift_consensus.chronoshift_block_verifier.utils')
     def test_k_policy(self,
                       mock_utils,
@@ -394,7 +394,7 @@ class TestPoetBlockVerifier(TestCase):
     @mock.patch(
         'chronoshift_cs.chronoshift_consensus.chronoshift_block_verifier.ConsensusState')
     @mock.patch('chronoshift_cs.chronoshift_consensus.chronoshift_block_verifier.'
-                'ValidatorRegistryView')
+                'ChronoShiftRegistryView')
     @mock.patch('chronoshift_cs.chronoshift_consensus.chronoshift_block_verifier.utils')
     def test_c_policy(self,
                       mock_utils,
@@ -467,7 +467,7 @@ class TestPoetBlockVerifier(TestCase):
     @mock.patch(
         'chronoshift_cs.chronoshift_consensus.chronoshift_block_verifier.ConsensusState')
     @mock.patch('chronoshift_cs.chronoshift_consensus.chronoshift_block_verifier.'
-                'ValidatorRegistryView')
+                'ChronoShiftRegistryView')
     @mock.patch('chronoshift_cs.chronoshift_consensus.chronoshift_block_verifier.utils')
     def test_z_policy(self,
                       mock_utils,
@@ -538,7 +538,7 @@ class TestPoetBlockVerifier(TestCase):
     @mock.patch(
         'chronoshift_cs.chronoshift_consensus.chronoshift_block_verifier.ConsensusState')
     @mock.patch('chronoshift_cs.chronoshift_consensus.chronoshift_block_verifier.'
-                'ValidatorRegistryView')
+                'ChronoShiftRegistryView')
     @mock.patch('chronoshift_cs.chronoshift_consensus.chronoshift_block_verifier.utils')
     def test_block_verifier_valid_block_claim(
             self,

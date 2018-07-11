@@ -620,8 +620,21 @@ class TestConsensusState(TestCase):
         """Verify that consensus state properly indicates whether or not a
         validator is trying to claim a block before the block claim delay
         """
-        mock_validator_registry_view = mock.Mock()
-        mock_validator_registry_view.get_validators.return_value = [
+        # mock_validator_registry_view = mock.Mock()
+        # mock_validator_registry_view.get_validators.return_value = [
+        #     'validator_001',
+        #     'validator_002',
+        #     'validator_003',
+        #     'validator_004',
+        #     'validator_005',
+        #     'validator_006',
+        #     'validator_008',
+        #     'validator_009',
+        #     'validator_010'
+        # ]
+
+        mock_chronoshift_registry_view = mock.Mock()
+        mock_chronoshift_registry_view.get_validators.return_value = [
             'validator_001',
             'validator_002',
             'validator_003',
@@ -670,7 +683,7 @@ class TestConsensusState(TestCase):
                 state.validator_is_claiming_too_early(
                     validator_info=validator_info,
                     block_number=block_number,
-                    validator_registry_view=mock_validator_registry_view,
+                    chronoshift_registry_view=mock_chronoshift_registry_view,
                     chronoshift_settings_view=mock_chronoshift_settings_view,
                     block_store=mock_block_store))
 
@@ -680,7 +693,7 @@ class TestConsensusState(TestCase):
                 state.validator_is_claiming_too_early(
                     validator_info=validator_info,
                     block_number=block_number,
-                    validator_registry_view=mock_validator_registry_view,
+                    chronoshift_registry_view=mock_chronoshift_registry_view,
                     chronoshift_settings_view=mock_chronoshift_settings_view,
                     block_store=mock_block_store))
 
