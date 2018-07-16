@@ -117,7 +117,8 @@ class TestWaitCertificate(TestCase):
                 validator_address='1660 Pennsylvania Avenue NW',
                 previous_certificate_id=NULL_BLOCK_IDENTIFIER,
                 consensus_state=self.mock_consensus_state,
-                chronoshift_settings_view=self.mock_poet_settings_view)
+                chronoshift_stake_view=self.mock_poet_settings_view)
+                #chronoshift_settings_view=self.mock_poet_settings_view)
         wc = \
             WaitCertificate.create_wait_certificate(
                 chronoshift_enclave_module=self.chronoshift_enclave_module,
@@ -132,7 +133,8 @@ class TestWaitCertificate(TestCase):
                 validator_address='1660 Pennsylvania Avenue NW',
                 previous_certificate_id=wc.identifier,
                 consensus_state=self.mock_consensus_state,
-                chronoshift_settings_view=self.mock_poet_settings_view)
+                chronoshift_stake_view=self.mock_poet_settings_view)
+                #chronoshift_settings_view=self.mock_poet_settings_view)
 
         with self.assertRaises(ValueError):
             WaitCertificate.create_wait_certificate(
@@ -158,7 +160,8 @@ class TestWaitCertificate(TestCase):
                 validator_address='1660 Pennsylvania Avenue NW',
                 previous_certificate_id=NULL_BLOCK_IDENTIFIER,
                 consensus_state=self.mock_consensus_state,
-                chronoshift_settings_view=self.mock_poet_settings_view)
+                chronoshift_stake_view=self.mock_poet_settings_view)
+                #chronoshift_settings_view=self.mock_poet_settings_view)
         wc = \
             WaitCertificate.create_wait_certificate(
                 chronoshift_enclave_module=self.chronoshift_enclave_module,
@@ -173,7 +176,7 @@ class TestWaitCertificate(TestCase):
                 validator_address='1660 Pennsylvania Avenue NW',
                 previous_certificate_id=wc.identifier,
                 consensus_state=self.mock_consensus_state,
-                chronoshift_settings_view=self.mock_poet_settings_view)
+                chronoshift_stake_view=self.mock_poet_settings_view)
 
         while not wt.has_expired(time.time()):
             time.sleep(1)
@@ -207,7 +210,7 @@ class TestWaitCertificate(TestCase):
                 validator_address='1660 Pennsylvania Avenue NW',
                 previous_certificate_id=NULL_BLOCK_IDENTIFIER,
                 consensus_state=self.mock_consensus_state,
-                chronoshift_settings_view=self.mock_poet_settings_view)
+                chronoshift_stake_view=self.mock_poet_settings_view)
         wt2 = \
             WaitTimer.create_wait_timer(
                 chronoshift_enclave_module=self.chronoshift_enclave_module,
@@ -215,7 +218,7 @@ class TestWaitCertificate(TestCase):
                 validator_address='1660 Pennsylvania Avenue NW',
                 previous_certificate_id=NULL_BLOCK_IDENTIFIER,
                 consensus_state=self.mock_consensus_state,
-                chronoshift_settings_view=self.mock_poet_settings_view)
+                chronoshift_stake_view=self.mock_poet_settings_view)
 
         # Verify that we cannot create a wait certificate using the first
         # wait timer with the second signup data
@@ -250,7 +253,7 @@ class TestWaitCertificate(TestCase):
                 validator_address='1660 Pennsylvania Avenue NW',
                 previous_certificate_id=NULL_BLOCK_IDENTIFIER,
                 consensus_state=self.mock_consensus_state,
-                chronoshift_settings_view=self.mock_poet_settings_view)
+                chronoshift_stake_view=self.mock_poet_settings_view)
         wc = \
             WaitCertificate.create_wait_certificate(
                 chronoshift_enclave_module=self.chronoshift_enclave_module,
@@ -275,7 +278,7 @@ class TestWaitCertificate(TestCase):
                 validator_address='1660 Pennsylvania Avenue NW',
                 previous_certificate_id=wc.identifier,
                 consensus_state=self.mock_consensus_state,
-                chronoshift_settings_view=self.mock_poet_settings_view)
+                chronoshift_stake_view=self.mock_poet_settings_view)
         with self.assertRaises(ValueError):
             WaitCertificate.create_wait_certificate(
                 chronoshift_enclave_module=self.chronoshift_enclave_module,
@@ -360,7 +363,7 @@ class TestWaitCertificate(TestCase):
                 validator_address='1660 Pennsylvania Avenue NW',
                 previous_certificate_id=NULL_BLOCK_IDENTIFIER,
                 consensus_state=self.mock_consensus_state,
-                chronoshift_settings_view=self.mock_poet_settings_view)
+                chronoshift_stake_view=self.mock_poet_settings_view)
 
         # Now we can create a wait certificate and verify that it correlates
         # to the wait timer we just created
@@ -389,7 +392,7 @@ class TestWaitCertificate(TestCase):
             previous_certificate_id=NULL_BLOCK_IDENTIFIER,
             poet_public_key=signup_info.poet_public_key,
             consensus_state=self.mock_consensus_state,
-            chronoshift_settings_view=self.mock_poet_settings_view)
+            chronoshift_stake_view=self.mock_poet_settings_view)
 
         validator_info = \
             CValidatorInfo(
@@ -399,7 +402,7 @@ class TestWaitCertificate(TestCase):
         self.mock_consensus_state.validator_did_claim_block(
             validator_info=validator_info,
             wait_certificate=wc,
-            chronoshift_settings_view=self.mock_poet_settings_view)
+            chronoshift_stake_view=self.mock_poet_settings_view)
 
         # Create another wait certificate and verify it is valid also
         wt = \
@@ -409,7 +412,7 @@ class TestWaitCertificate(TestCase):
                 validator_address='1660 Pennsylvania Avenue NW',
                 previous_certificate_id=wc.identifier,
                 consensus_state=self.mock_consensus_state,
-                chronoshift_settings_view=self.mock_poet_settings_view)
+                chronoshift_stake_view=self.mock_poet_settings_view)
 
         # Now we can create a wait certificate and verify that it correlates
         # to the wait timer we just created
@@ -425,7 +428,7 @@ class TestWaitCertificate(TestCase):
             previous_certificate_id=wc.identifier,
             poet_public_key=signup_info.poet_public_key,
             consensus_state=self.mock_consensus_state,
-            chronoshift_settings_view=self.mock_poet_settings_view)
+            chronoshift_stake_view=self.mock_poet_settings_view)
 
     def test_serialization(self):
         # Need to create signup information and wait timer first
@@ -480,7 +483,7 @@ class TestWaitCertificate(TestCase):
                 validator_address='1660 Pennsylvania Avenue NW',
                 previous_certificate_id=NULL_BLOCK_IDENTIFIER,
                 consensus_state=self.mock_consensus_state,
-                chronoshift_settings_view=self.mock_poet_settings_view)
+                chronoshift_stake_view=self.mock_poet_settings_view)
 
         # Now we can create a wait certificate and serialize
         wc = \
@@ -530,4 +533,4 @@ class TestWaitCertificate(TestCase):
             previous_certificate_id=NULL_BLOCK_IDENTIFIER,
             poet_public_key=signup_info.poet_public_key,
             consensus_state=self.mock_consensus_state,
-            chronoshift_settings_view=self.mock_poet_settings_view)
+            chronoshift_stake_view=self.mock_poet_settings_view)

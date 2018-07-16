@@ -160,7 +160,7 @@ class IdentityTransactionHandler(TransactionHandler):
         sender_stake=_get_stake(signer,context)
         if id_type == StakePayload.SEND_STAKE:
             send=payload.send
-            _send_stake(send, context, sender_stake, current_block)
+            _apply_send(send, context, sender_stake, current_block)
             #_set_send(payload.send, context)
         elif id_type == StakePayload.LOCK_STAKE:
             _set_lock(payload.lock, context)

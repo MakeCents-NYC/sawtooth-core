@@ -17,10 +17,7 @@ import threading
 import importlib
 import logging
 
-#from sawtooth_poet.poet_consensus.poet_settings_view import PoetSettingsView
-
-from chronoshift_cs.chronoshift_consensus.chronoshift_settings_view import ChronoShiftSettingsView
-
+from chronoshift_cs.chronoshift_consensus.chronoshift_stake_view import ChronoShiftStakeView
 LOGGER = logging.getLogger(__name__)
 
 
@@ -60,8 +57,8 @@ class ChronoShiftEnclaveFactory(object):
             # loaded enclave module.
             if cls._chronoshift_enclave_module is None:
                 # Get the configured PoET enclave module name.
-                chronoshift_settings_view = ChronoShiftSettingsView(state_view)
-                module_name = chronoshift_settings_view.enclave_module_name
+                chronoshift_stake_view=ChronoShiftStakeView(state_view)
+                module_name = chronoshift_stake_view.enclave_module_name
 
                 LOGGER.info(
                     'Load PoET enclave module: %s; '
@@ -69,9 +66,10 @@ class ChronoShiftEnclaveFactory(object):
                     'Initial wait time: %f; '
                     'Population estimate sample size: %d; ',
                     module_name,
-                    chronoshift_settings_view.target_wait_time,
-                    chronoshift_settings_view.initial_wait_time,
-                    chronoshift_settings_view.population_estimate_sample_size)
+                    chronoshift_stake_view.target_wait_time,
+                    chronoshift_stake_view.initial_wait_time,
+                    chronoshift_stake_view.population_estimate_sample_size,
+                    chronoshift_stake_view.minimum_stake_amt)
 
                 # Load and initialize the module
                 module = importlib.import_module(module_name)

@@ -39,7 +39,8 @@ class WaitTimer(object):
                           validator_address,
                           previous_certificate_id,
                           consensus_state,
-                          chronoshift_settings_view):
+                          chronoshift_stake_view):
+                          #chronoshift_settings_view):
         """Creates a wait timer in the enclave and then constructs
         a WaitTimer object.
 
@@ -67,7 +68,8 @@ class WaitTimer(object):
                 validator_address,
                 previous_certificate_id,
                 consensus_state.compute_local_mean(
-                    chronoshift_settings_view=chronoshift_settings_view))
+                    chronoshift_stake_view=chronoshift_stake_view))
+                    #chronoshift_settings_view=chronoshift_settings_view))
 
         return cls(enclave_timer)
 
@@ -100,7 +102,7 @@ class WaitTimer(object):
                 self.duration,
                 self.previous_certificate_id)
 
-    def population_estimate(self, chronoshift_settings_view):
+    def population_estimate(self, chronoshift_stake_view):
         """Return the population estimate for the block associated with this
         wait timer
 
@@ -110,7 +112,7 @@ class WaitTimer(object):
         Returns:
             float: The population estimate for this wait timer
         """
-        return self.local_mean /chronoshift_settings_view.target_wait_time
+        return self.local_mean /chronoshift_stake_view.target_wait_time
 
     def serialize(self):
         """Serializes the underlying enclave wait timer

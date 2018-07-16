@@ -30,6 +30,7 @@ import cbor
 from chronoshift_cs.chronoshift_consensus import utils
 from chronoshift_cs.chronoshift_consensus.chronoshift_settings_view import ChronoShiftSettingsView
 from chronoshift_cs.chronoshift_consensus.signup_info import SignupInfo
+from chronoshift_cs.chronoshift_consensus.chronoshift_stake_view import ChronoShiftStakeView
 
 
 
@@ -89,7 +90,7 @@ class ConsensusState(object):
     _BlockInfo = \
         collections.namedtuple(
             '_BlockInfo',
-            ['wait_certificate', 'validator_info', 'chronoshift_settings_view'])
+            ['wait_certificate', 'validator_info', 'chronoshift_stake_view'])
 
     """ Instead of creating a full-fledged class, let's use a named tuple for
     the block info.  The block info represents the information we need to
@@ -217,7 +218,7 @@ class ConsensusState(object):
                     ConsensusState._BlockInfo(
                         wait_certificate=wait_certificate,
                         validator_info=validator_info,
-                        chronoshift_settings_view=ChronoShiftSettingsView(state_view))
+                        chronoshift_stake_view=ChronoShiftStakeView(state_view))
 
             # Otherwise, this is a non-PoET block.  If we don't have any blocks
             # yet or the last block we processed was a PoET block, put a
@@ -228,7 +229,7 @@ class ConsensusState(object):
                     ConsensusState._BlockInfo(
                         wait_certificate=None,
                         validator_info=None,
-                        chronoshift_settings_view=None)
+                        chronoshift_stake_view=None)
 
             previous_wait_certificate = wait_certificate
 
@@ -265,7 +266,7 @@ class ConsensusState(object):
                 consensus_state.validator_did_claim_block(
                     validator_info=block_info.validator_info,
                     wait_certificate=block_info.wait_certificate,
-                    chronoshift_settings_view=block_info.chronoshift_settings_view)
+                    chronoshift_stake_view=block_info.chronoshift_stake_view)
                 consensus_state_store[current_id] = consensus_state
 
                 LOGGER.debug(
@@ -295,6 +296,8 @@ class ConsensusState(object):
     @property
     def total_block_claim_count(self):
         return self._total_block_claim_count
+
+
 
     @staticmethod
     def _check_validator_state(validator_state):
@@ -356,7 +359,7 @@ class ConsensusState(object):
 
     def _build_population_estimate_list(self,
                                         block_id,
-                                        chronoshift_settings_view,
+                                        chronoshift_stake_view,
                                         block_cache,
                                         poet_enclave_module):
         """Starting at the block provided, walk back the blocks and collect the
@@ -387,7 +390,7 @@ class ConsensusState(object):
         # settings view, we know now many blocks to get.
         number_of_blocks = \
             self.total_block_claim_count - \
-            chronoshift_settings_view.population_estimate_sample_size
+            chronoshift_stake_view.population_estimate_sample_size
         with ConsensusState._population_estimate_cache_lock:
             for _ in range(number_of_blocks):
                 population_cache_entry = \
@@ -400,7 +403,7 @@ class ConsensusState(object):
                             poet_enclave_module=poet_enclave_module)
                     population_estimate = \
                         wait_certificate.population_estimate(
-                            chronoshift_settings_view=chronoshift_settings_view)
+                            chronoshift_stake_view=chronoshift_stake_view)
                     population_cache_entry = \
                         ConsensusState._EstimateInfo(
                             population_estimate=population_estimate,
@@ -414,7 +417,7 @@ class ConsensusState(object):
 
         return population_estimate_list
 
-    def _compute_population_estimate(self, chronoshift_settings_view):
+    def _compute_population_estimate(self, chronoshift_stake_view):
         """Estimates the size of the validator population by computing the
         average wait time and the average local mean used by the winning
         validator.
@@ -443,7 +446,7 @@ class ConsensusState(object):
         """
         assert \
             len(self._population_samples) == \
-            chronoshift_settings_view.population_estimate_sample_size
+            chronoshift_stake_view.population_estimate_sample_size
 
         sum_waits = 0
         sum_means = 0
@@ -455,7 +458,7 @@ class ConsensusState(object):
 
         return sum_means / sum_waits
 
-    def compute_local_mean(self, chronoshift_settings_view):
+    def compute_local_mean(self, chronoshift_stake_view):
         """Computes the local mean wait time based on either the ratio of
         target to initial wait times (if during the bootstrapping period) or
         the certificate history (once bootstrapping period has passed).
@@ -471,7 +474,7 @@ class ConsensusState(object):
         # one and save it for later.
         if self._local_mean is None:
             population_estimate_sample_size = \
-                chronoshift_settings_view.population_estimate_sample_size
+                chronoshift_stake_view.population_estimate_sample_size
 
             # If there have not been enough blocks claimed to satisfy the
             # population estimate sample size, we are still in the
@@ -481,8 +484,8 @@ class ConsensusState(object):
             count = len(self._population_samples)
             if count < population_estimate_sample_size:
                 ratio = 1.0 * count / population_estimate_sample_size
-                target_wait_time = chronoshift_settings_view.target_wait_time
-                initial_wait_time = chronoshift_settings_view.initial_wait_time
+                target_wait_time = chronoshift_stake_view.target_wait_time
+                initial_wait_time = chronoshift_stake_view.initial_wait_time
                 self._local_mean = \
                     (target_wait_time * (1 - ratio ** 2)) + \
                     (initial_wait_time * ratio ** 2)
@@ -492,9 +495,9 @@ class ConsensusState(object):
             # estimate of the validator network population size.
             else:
                 self._local_mean = \
-                    chronoshift_settings_view.target_wait_time * \
+                    chronoshift_stake_view.target_wait_time * \
                     self._compute_population_estimate(
-                        chronoshift_settings_view=chronoshift_settings_view)
+                        chronoshift_stake_view=chronoshift_stake_view)
 
         return self._local_mean
 
@@ -527,7 +530,7 @@ class ConsensusState(object):
     def validator_did_claim_block(self,
                                   validator_info,
                                   wait_certificate,
-                                  chronoshift_settings_view):
+                                  chronoshift_stake_view):
         """For the validator that is referenced by the validator information
         object, update its state based upon it claiming a block.
 
@@ -557,7 +560,7 @@ class ConsensusState(object):
                 duration=wait_certificate.duration,
                 local_mean=wait_certificate.local_mean))
         while len(self._population_samples) > \
-                chronoshift_settings_view.population_estimate_sample_size:
+                chronoshift_stake_view.population_estimate_sample_size:
             self._population_samples.popleft()
 
         # We need to fetch the current state for the validator
@@ -600,7 +603,7 @@ class ConsensusState(object):
 
     def signup_attempt_timed_out(self,
                                  signup_nonce,
-                                 chronoshift_settings_view,
+                                 chronoshift_stake_view,
                                  block_cache):
         """Checks whether too many blocks have elapsed since
         since the registration attempt.
@@ -618,7 +621,7 @@ class ConsensusState(object):
         # and signup_commit_maximum_delay, but then we can't individually
         # control this timeout behavior. Consider behavior as a new node joins
         # an old network.
-        depth = chronoshift_settings_view.registration_retry_delay
+        depth = chronoshift_stake_view.registration_retry_delay
 
         i = 0
         for block in block_cache.block_store.get_block_iter(reverse=True):
@@ -632,7 +635,7 @@ class ConsensusState(object):
 
     def validator_signup_was_committed_too_late(self,
                                                 validator_info,
-                                                chronoshift_settings_view,
+                                                chronoshift_stake_view,
                                                 block_cache):
         """Determines if a validator's registry transaction committing it
         current PoET keys, etc., was committed too late - i.e., the number of
@@ -671,7 +674,7 @@ class ConsensusState(object):
         # reached the beginning of the blockchain.  The first case is
         # success (i.e., the validator signup info passed the freshness
         # test) while the other two cases are failure.
-        for _ in range(chronoshift_settings_view.signup_commit_maximum_delay + 1):
+        for _ in range(chronoshift_stake_view.signup_commit_maximum_delay + 1):
             if SignupInfo.block_id_to_nonce(block.previous_block_id) == \
                     validator_info.signup_info.nonce:
                 LOGGER.debug(
@@ -705,12 +708,12 @@ class ConsensusState(object):
             validator_info.id[-8:],
             commit_block_id[:8],
             validator_info.signup_info.nonce,
-            chronoshift_settings_view.signup_commit_maximum_delay + 1)
+            chronoshift_stake_view.signup_commit_maximum_delay + 1)
         return True
 
     def validator_has_claimed_block_limit(self,
                                           validator_info,
-                                          chronoshift_settings_view):
+                                          chronoshift_stake_view):
         """Determines if a validator has already claimed the maximum number of
         blocks allowed with its PoET key pair.
         Args:
@@ -721,7 +724,7 @@ class ConsensusState(object):
                 number of blocks with its current PoET key pair, False
                 otherwise
         """
-        key_block_claim_limit = chronoshift_settings_view.key_block_claim_limit
+        key_block_claim_limit = chronoshift_stake_view.key_block_claim_limit
         validator_state = \
             self.get_validator_state(validator_info=validator_info)
 
@@ -759,7 +762,7 @@ class ConsensusState(object):
                                         validator_info,
                                         block_number,
                                         chronoshift_registry_view,
-                                        chronoshift_settings_view,
+                                        chronoshift_stake_view,
                                         block_store):
         """Determines if a validator has tried to claim a block too early
         (i.e, has not waited the required number of blocks between when the
@@ -795,7 +798,7 @@ class ConsensusState(object):
         # able to claim a block.
         number_of_validators = len(chronoshift_registry_view.get_validators())
         block_claim_delay = \
-            min(chronoshift_settings_view.block_claim_delay, number_of_validators - 1)
+            min(chronoshift_stake_view.block_claim_delay, number_of_validators - 1)
 
         # While a validator network is starting up, we need to be careful
         # about applying the block claim delay because if we are too
@@ -847,7 +850,7 @@ class ConsensusState(object):
     def validator_is_claiming_too_frequently(self,
                                              validator_info,
                                              previous_block_id,
-                                             chronoshift_settings_view,
+                                             chronoshift_stake_view,
                                              population_estimate,
                                              block_cache,
                                              poet_enclave_module):
@@ -877,7 +880,7 @@ class ConsensusState(object):
         # mean is calculated as a fixed ratio of the target to initial wait),
         # simply short-circuit the test an allow the block to be claimed.
         if self.total_block_claim_count < \
-                chronoshift_settings_view.population_estimate_sample_size:
+                chronoshift_stake_view.population_estimate_sample_size:
             return False
 
         # Build up the population estimate list for the block chain and then
@@ -887,7 +890,7 @@ class ConsensusState(object):
         population_estimate_list = \
             self._build_population_estimate_list(
                 block_id=previous_block_id,
-                chronoshift_settings_view=chronoshift_settings_view,
+                chronoshift_stake_view=chronoshift_stake_view,
                 block_cache=block_cache,
                 poet_enclave_module=poet_enclave_module)
         population_estimate_list.appendleft(
@@ -899,8 +902,8 @@ class ConsensusState(object):
         observed_wins = 0
         expected_wins = 0
         block_count = 0
-        minimum_win_count = chronoshift_settings_view.ztest_minimum_win_count
-        maximum_win_deviation = chronoshift_settings_view.ztest_maximum_win_deviation
+        minimum_win_count = chronoshift_stake_view.ztest_minimum_win_count
+        maximum_win_deviation = chronoshift_stake_view.ztest_maximum_win_deviation
 
         # We are now going to compute a "1 sample Z test" for each
         # progressive range of results in the history.  Test the
@@ -1062,6 +1065,8 @@ class ConsensusState(object):
                 self._check_validator_state(validator_state)
                 self._validators[str(key)] = validator_state
 
+
+
         except (LookupError, ValueError, KeyError, TypeError) as error:
             raise \
                 ValueError(
@@ -1083,19 +1088,12 @@ class ConsensusState(object):
                 self._population_samples,
                 validators)
 
-
-    # def validator_signup_control_stake(self,validator_info):
-    #     signup_info=_ChronoShiftEnclaveSimulator.deserialize_signup_info(validator_info.signup_info)
-    #     stake_address=signup_info.stake_address
-    #     public_key=signup_info.poet_public_key
-    #     stake=StakeTransactionHandler._get_stake(public_key,context)
-    #     if stake.amount < self.MIN_STAKE_AMT:
-    #         return False
-    #     return True
-    #
-    # def validator_signup_locked_stake(self,stake,context):
-    #     if stake.blockNumber > current_block:
-    #         return False
-    #     return True
+    def validator_stakeamt_is_low(self,validator_info,block_Number,chronoshift_stake_view):
+        minimum_stake_amt = self.MIN_STAKE_AMT
+        key = validator_info.signup_info.poet_public_key
+        stake_value = chronoshift_stake_view._get_stake(key)
+        if stake_value < minimum_stake_amt:
+            return True
+        return False
 
 

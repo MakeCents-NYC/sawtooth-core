@@ -43,7 +43,7 @@ from chronoshift.protobuf.chronoshift_registry_pb2 \
             'ConsensusStateStore')
 @mock.patch('chronoshift_cs.chronoshift_consensus.chronoshift_block_verifier.BlockWrapper')
 @mock.patch('chronoshift_cs.chronoshift_consensus.chronoshift_block_verifier.'
-            'ChronoShiftSettingsView')
+            'ChronoShiftStakeView')
 @mock.patch('chronoshift_cs.chronoshift_consensus.chronoshift_block_verifier.factory')
 class TestPoetBlockVerifier(TestCase):
 

@@ -22,6 +22,7 @@ from functools import lru_cache
 from stake.protobuf.stake_pb2 import StakeList
 from stake.protobuf.stake_pb2 import Stake
 
+from sawtooth_validator.state.settings_view import SettingsView
 
 # The identity namespace is special: it is not derived from a hash.
 STAKE_NAMESPACE = '807062'
@@ -56,6 +57,7 @@ class StakeView(object):
             state_view (:obj:`StateView`): a state view
         """
         self._state_view = state_view
+        self._settings_view = SettingsView(state_view)
 
         # The public method for get_stake should have its results memoized
         # via an lru_cache.  Typical use of the decorator results in the

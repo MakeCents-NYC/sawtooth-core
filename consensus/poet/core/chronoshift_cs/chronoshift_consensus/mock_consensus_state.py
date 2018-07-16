@@ -24,7 +24,8 @@ class MockConsensusState(object):
     def create_mock_consensus_state(committed_too_late=False,
                                     claimed_block_limit=False,
                                     claiming_too_early=False,
-                                    claiming_too_frequently=False):
+                                    claiming_too_frequently=False,
+                                    stakeamt_low=False):
         new_mock = mock.Mock()
         new_mock.validator_signup_was_committed_too_late.return_value = \
             committed_too_late
@@ -34,5 +35,6 @@ class MockConsensusState(object):
             claiming_too_early
         new_mock.validator_is_claiming_too_frequently.return_value = \
             claiming_too_frequently
-
+        new_mock.validator_stakeamt_is_low.return_value = \
+            stakeamt_low
         return new_mock

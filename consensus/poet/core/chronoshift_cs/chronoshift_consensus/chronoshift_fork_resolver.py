@@ -28,7 +28,7 @@ from chronoshift_cs.chronoshift_consensus.consensus_state_store \
 from chronoshift_cs.chronoshift_consensus import chronoshift_enclave_factory as factory
 from chronoshift_cs.chronoshift_consensus import utils
 from chronoshift_cs.chronoshift_consensus.chronoshift_settings_view import ChronoShiftSettingsView
-
+from chronoshift_cs.chronoshift_consensus.chronoshift_stake_view import ChronoShiftStakeView
 # from sawtooth_poet_common.validator_registry_view.validator_registry_view \
 #     import ValidatorRegistryView
 
@@ -297,7 +297,7 @@ class ChronoShiftForkResolver(ForkResolverInterface):
                 consensus_state.validator_did_claim_block(
                     validator_info=validator_info,
                     wait_certificate=new_fork_wait_certificate,
-                    chronoshift_settings_view=ChronoShiftSettingsView(state_view))
+                    chronoshift_stake_view=ChronoShiftStakeView(state_view))
                 self._consensus_state_store[new_fork_head.identifier] = \
                     consensus_state
 

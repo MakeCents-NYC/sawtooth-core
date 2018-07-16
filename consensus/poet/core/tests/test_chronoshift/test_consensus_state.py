@@ -27,6 +27,9 @@ from chronoshift.protobuf.chronoshift_registry_pb2 \
     import CValidatorInfo
 from chronoshift.protobuf.chronoshift_registry_pb2 \
     import CSignUpInfo
+
+from chronoshift_cs.chronoshift_consensus.chronoshift_stake_view import ChronoShiftStakeView
+
 # from sawtooth_poet.poet_consensus import consensus_state
 #
 # from sawtooth_poet_common.protobuf.validator_registry_pb2 \
@@ -84,7 +87,7 @@ class TestConsensusState(TestCase):
         state.validator_did_claim_block(
             validator_info=validator_info,
             wait_certificate=wait_certificate,
-            chronoshift_settings_view=poet_settings_view)
+            chronoshift_stake_view=poet_settings_view)
 
         self.assertEqual(
             state.aggregate_local_mean,
@@ -103,7 +106,7 @@ class TestConsensusState(TestCase):
         state.validator_did_claim_block(
             validator_info=validator_info,
             wait_certificate=wait_certificate,
-            chronoshift_settings_view=poet_settings_view)
+            chronoshift_stake_view=poet_settings_view)
 
         self.assertEqual(
             state.aggregate_local_mean,
@@ -125,7 +128,7 @@ class TestConsensusState(TestCase):
         state.validator_did_claim_block(
             validator_info=validator_info,
             wait_certificate=wait_certificate,
-            chronoshift_settings_view=poet_settings_view)
+            chronoshift_stake_view=poet_settings_view)
 
         self.assertEqual(
             state.aggregate_local_mean,
@@ -282,7 +285,7 @@ class TestConsensusState(TestCase):
         state.validator_did_claim_block(
             validator_info=validator_info,
             wait_certificate=wait_certificate,
-            chronoshift_settings_view=poet_settings_view)
+            chronoshift_stake_view=poet_settings_view)
         doppelganger_state = consensus_state.ConsensusState()
 
         # Truncate the serialized value on purpose
@@ -402,11 +405,11 @@ class TestConsensusState(TestCase):
         state.validator_did_claim_block(
             validator_info=validator_info_1,
             wait_certificate=wait_certificate_1,
-            chronoshift_settings_view=mock_poet_settings_view)
+            chronoshift_stake_view=mock_poet_settings_view)
         state.validator_did_claim_block(
             validator_info=validator_info_2,
             wait_certificate=wait_certificate_2,
-            chronoshift_settings_view=mock_poet_settings_view)
+            chronoshift_stake_view=mock_poet_settings_view)
 
         doppelganger_state.parse_from_bytes(state.serialize_to_bytes())
 
@@ -415,9 +418,9 @@ class TestConsensusState(TestCase):
             doppelganger_state.aggregate_local_mean)
         self.assertAlmostEqual(
             first=state.compute_local_mean(
-                chronoshift_settings_view=mock_poet_settings_view),
+                chronoshift_stake_view=mock_poet_settings_view),
             second=doppelganger_state.compute_local_mean(
-                chronoshift_settings_view=mock_poet_settings_view),
+                chronoshift_stake_view=mock_poet_settings_view),
             places=4)
         self.assertEqual(
             state.total_block_claim_count,
@@ -517,7 +520,7 @@ class TestConsensusState(TestCase):
             state.validator_did_claim_block(
                 validator_info=validator_info,
                 wait_certificate=mock_wait_certificate,
-                chronoshift_settings_view=mock_chronoshift_settings_view)
+                chronoshift_stake_view=mock_chronoshift_settings_view)
 
         # Test that after bootstrapping, the local means adhere to the
         # following:
@@ -565,7 +568,7 @@ class TestConsensusState(TestCase):
             state.validator_did_claim_block(
                 validator_info=validator_info,
                 wait_certificate=mock_wait_certificate,
-                chronoshift_settings_view=mock_chronoshift_settings_view)
+                chronoshift_stake_view=mock_chronoshift_settings_view)
 
     def test_block_claim_limit(self):
         """Verify that consensus state properly indicates whether or not a
@@ -592,18 +595,18 @@ class TestConsensusState(TestCase):
             self.assertFalse(
                 state.validator_has_claimed_block_limit(
                     validator_info=validator_info,
-                    chronoshift_settings_view=mock_chronoshift_settings_view))
+                    chronoshift_stake_view=mock_chronoshift_settings_view))
             state.validator_did_claim_block(
                 validator_info=validator_info,
                 wait_certificate=mock_wait_certificate,
-                chronoshift_settings_view=mock_chronoshift_settings_view)
+                chronoshift_stake_view=mock_chronoshift_settings_view)
 
         # Now that validator has claimed limit for key, verify that it triggers
         # the test
         self.assertTrue(
             state.validator_has_claimed_block_limit(
                 validator_info=validator_info,
-                chronoshift_settings_view=mock_chronoshift_settings_view))
+                chronoshift_stake_view=mock_chronoshift_settings_view))
 
         # Switch keys and verify that validator again doesn't trigger test
         validator_info = \
@@ -614,7 +617,7 @@ class TestConsensusState(TestCase):
         self.assertFalse(
             state.validator_has_claimed_block_limit(
                 validator_info=validator_info,
-                chronoshift_settings_view=mock_chronoshift_settings_view))
+                chronoshift_stake_view=mock_chronoshift_settings_view))
 
     def test_block_claim_delay(self):
         """Verify that consensus state properly indicates whether or not a
@@ -675,7 +678,7 @@ class TestConsensusState(TestCase):
             state.validator_did_claim_block(
                 validator_info=validator_info,
                 wait_certificate=mock_wait_certificate,
-                chronoshift_settings_view=mock_chronoshift_settings_view)
+                chronoshift_stake_view=mock_chronoshift_settings_view)
 
         # Test with blocks satisfying the claim delay
         for block_number in [103, 105, 110, 200, 1000]:
@@ -684,7 +687,7 @@ class TestConsensusState(TestCase):
                     validator_info=validator_info,
                     block_number=block_number,
                     chronoshift_registry_view=mock_chronoshift_registry_view,
-                    chronoshift_settings_view=mock_chronoshift_settings_view,
+                    chronoshift_stake_view=mock_chronoshift_settings_view,
                     block_store=mock_block_store))
 
         # Test with blocks not satisfying the claim delay
@@ -694,7 +697,7 @@ class TestConsensusState(TestCase):
                     validator_info=validator_info,
                     block_number=block_number,
                     chronoshift_registry_view=mock_chronoshift_registry_view,
-                    chronoshift_settings_view=mock_chronoshift_settings_view,
+                    chronoshift_stake_view=mock_chronoshift_settings_view,
                     block_store=mock_block_store))
 
     @mock.patch('chronoshift_cs.chronoshift_consensus.consensus_state.utils.'
@@ -709,7 +712,7 @@ class TestConsensusState(TestCase):
         mock_chronoshift_settings_view.population_estimate_sample_size = 50
         mock_chronoshift_settings_view.ztest_minimum_win_count = 3
         mock_chronoshift_settings_view.ztest_maximum_win_deviation = 3.075
-
+        mock_chronoshift_settings_view.minimum_stake_amt=5.0
         mock_wait_certificate = mock.Mock()
         mock_wait_certificate.duration = 3.14
         mock_wait_certificate.local_mean = \
@@ -739,14 +742,14 @@ class TestConsensusState(TestCase):
             self.assertFalse(state.validator_is_claiming_too_frequently(
                 validator_info=validator_info,
                 previous_block_id='previous_id',
-                chronoshift_settings_view=mock_chronoshift_settings_view,
+                chronoshift_stake_view=mock_chronoshift_settings_view,
                 population_estimate=2,
                 block_cache=mock_block_cache,
                 poet_enclave_module=None))
             state.validator_did_claim_block(
                 validator_info=validator_info,
                 wait_certificate=mock_wait_certificate,
-                chronoshift_settings_view=mock_chronoshift_settings_view)
+                chronoshift_stake_view=mock_chronoshift_settings_view)
 
         # Per the spec, a z-score is calculated for each block, beyond the
         # minimum, that the validator has claimed.  The z-score is computed as:
@@ -785,20 +788,20 @@ class TestConsensusState(TestCase):
             self.assertFalse(state.validator_is_claiming_too_frequently(
                 validator_info=validator_info,
                 previous_block_id='previous_id',
-                chronoshift_settings_view=mock_chronoshift_settings_view,
+                chronoshift_stake_view=mock_chronoshift_settings_view,
                 population_estimate=2,
                 block_cache=mock_block_cache,
                 poet_enclave_module=None))
             state.validator_did_claim_block(
                 validator_info=validator_info,
                 wait_certificate=mock_wait_certificate,
-                chronoshift_settings_view=mock_chronoshift_settings_view)
+                chronoshift_stake_view=mock_chronoshift_settings_view)
 
         # Verify that now the validator triggers the frequency test
         self.assertTrue(state.validator_is_claiming_too_frequently(
             validator_info=validator_info,
             previous_block_id='previous_id',
-            chronoshift_settings_view=mock_chronoshift_settings_view,
+            chronoshift_stake_view=mock_chronoshift_settings_view,
             population_estimate=2,
             block_cache=mock_block_cache,
             poet_enclave_module=None))
@@ -819,8 +822,8 @@ class TestConsensusState(TestCase):
         mock_block_cache.block_store.get_block_by_transaction_id.\
             return_value = block_dictionary['004']
 
-        mock_poet_settings_view = mock.Mock()
-        mock_poet_settings_view.signup_commit_maximum_delay = 1
+        mock_chronoshift_stake_view = mock.Mock()
+        mock_chronoshift_stake_view.signup_commit_maximum_delay = 1
 
         validator_info = \
             CValidatorInfo(
@@ -838,7 +841,7 @@ class TestConsensusState(TestCase):
             self.assertTrue(
                 state.validator_signup_was_committed_too_late(
                     validator_info=validator_info,
-                    chronoshift_settings_view=mock_poet_settings_view,
+                    chronoshift_stake_view=mock_chronoshift_stake_view,
                     block_cache=mock_block_cache))
 
         # Simulate reaching the maximum commit delay before finding the block
@@ -856,11 +859,11 @@ class TestConsensusState(TestCase):
             mock_block_id_is_genesis.return_value = False
             state = consensus_state.ConsensusState()
             for delay in range(len(block_dictionary) - 1):
-                mock_poet_settings_view.signup_commit_maximum_delay = delay
+                mock_chronoshift_stake_view.signup_commit_maximum_delay = delay
                 self.assertTrue(
                     state.validator_signup_was_committed_too_late(
                         validator_info=validator_info,
-                        chronoshift_settings_view=mock_poet_settings_view,
+                        chronoshift_stake_view=mock_chronoshift_stake_view,
                         block_cache=mock_block_cache))
 
         # Simulate finding block before maximum delay
@@ -869,7 +872,7 @@ class TestConsensusState(TestCase):
             mock_block_id_is_genesis.return_value = False
             state = consensus_state.ConsensusState()
             for (nonce, delay) in zip(['001', '002', '003'], [2, 1, 0]):
-                mock_poet_settings_view.signup_commit_maximum_delay = delay
+                mock_chronoshift_stake_view.signup_commit_maximum_delay = delay
                 validator_info = \
                     CValidatorInfo(
                         id='validator_001',
@@ -880,5 +883,57 @@ class TestConsensusState(TestCase):
                 self.assertFalse(
                     state.validator_signup_was_committed_too_late(
                         validator_info=validator_info,
-                        chronoshift_settings_view=mock_poet_settings_view,
+                        chronoshift_stake_view=mock_chronoshift_stake_view,
                         block_cache=mock_block_cache))
+
+
+    def test_stakeamt_low(self):
+        """Verify that consensus state properly indicates whether or not a
+        validator has reached the block claim limit
+        """
+
+        mock_block = mock.Mock()
+        mock_chronoshift_stake_view = mock.Mock()
+        mock_chronoshift_stake_view.key_block_claim_limit = 10
+        mock_chronoshift_stake_view.population_estimate_sample_size = 50
+
+
+
+        validator_info = \
+            CValidatorInfo(
+                id='validator_001',
+                signup_info=CSignUpInfo(
+                    poet_public_key='key_001'))
+        state = consensus_state.ConsensusState()
+        chronoshift_stake_view = ChronoShiftStakeView(state_view=None)
+        # Verify that validator does not trigger key block claim limit and also
+        # "claim" blocks
+        self.assertFalse(
+            state.validator_stakeamt_is_low(
+                    validator_info=validator_info,
+                    block_Number=1.0,
+                    chronoshift_stake_view=chronoshift_stake_view))
+        state.validator_stakeamt_is_low(
+                validator_info=validator_info,
+                block_Number=mock_block.header.block_number,
+                chronoshift_stake_view=chronoshift_stake_view)
+
+        # Now that validator has claimed limit for key, verify that it triggers
+        # the test
+        # self.assertTrue(
+        #     state.validator_stakeamt_is_low(
+        #         validator_info=validator_info,
+        #         block_Number=mock_block.header.block_number,
+        #         chronoshift_stake_view=mock_chronoshift_stake_view))
+
+        # # Switch keys and verify that validator again doesn't trigger test
+        # validator_info = \
+        #     CValidatorInfo(
+        #         id='validator_001',
+        #         signup_info=CSignUpInfo(
+        #             poet_public_key='key_002'))
+        # self.assertFalse(
+        #     state.validator_stakeamt_is_low(
+        #         validator_info=validator_info,
+        #         block_Number=mock_block.header.block_number,
+        #         chronoshift_stake_view=mock_chronoshift_stake_view))

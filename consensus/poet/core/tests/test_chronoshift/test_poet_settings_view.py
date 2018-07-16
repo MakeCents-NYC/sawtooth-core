@@ -19,8 +19,9 @@ from unittest.mock import patch
 #from sawtooth_poet.poet_consensus.poet_settings_view import PoetSettingsView
 from chronoshift_cs.chronoshift_consensus.chronoshift_settings_view import ChronoShiftSettingsView
 
+from chronoshift_cs.chronoshift_consensus.chronoshift_stake_view import ChronoShiftStakeView
 
-@patch('chronoshift_cs.chronoshift_consensus.chronoshift_settings_view.SettingsView')
+@patch('chronoshift_cs.chronoshift_consensus.chronoshift_stake_view.SettingsView')
 class TestPoetSettingsView(unittest.TestCase):
 
     # pylint: disable=invalid-name
@@ -35,13 +36,15 @@ class TestPoetSettingsView(unittest.TestCase):
     _EXPECTED_DEFAULT_TARGET_WAIT_TIME_ = 20.0
     _EXPECTED_DEFAULT_ZTEST_MAXIMUM_WIN_DEVIATION_ = 3.075
     _EXPECTED_DEFAULT_ZTEST_MINIMUM_WIN_COUNT_ = 3
+    _EXPECTED_DEFAULT_MINIMUM_STAKE_AMT = 5.0
 
     def test_block_claim_delay(self, mock_settings_view):
         """Verify that retrieving block claim delay works for invalid
         cases (missing, invalid format, invalid value) as well as valid case.
         """
 
-        poet_settings_view = ChronoShiftSettingsView(state_view=None)
+        #poet_settings_view = ChronoShiftSettingsView(state_view=None)
+        poet_settings_view = ChronoShiftStakeView(state_view=None)
 
         # Simulate an underlying error parsing value
         mock_settings_view.return_value.get_setting.side_effect = \
@@ -65,16 +68,17 @@ class TestPoetSettingsView(unittest.TestCase):
         for bad_value in [-100, -1]:
             mock_settings_view.return_value.get_setting.return_value = \
                 bad_value
-            poet_settings_view = ChronoShiftSettingsView(state_view=None)
+            #poet_settings_view = ChronoShiftSettingsView(state_view=None)
+            poet_settings_view = ChronoShiftStakeView(state_view=None)
             self.assertEqual(
                 poet_settings_view.block_claim_delay,
                 TestPoetSettingsView._EXPECTED_DEFAULT_BLOCK_CLAIM_DELAY_)
 
         # Underlying config setting is a valid value
-        poet_settings_view = ChronoShiftSettingsView(state_view=None)
+        poet_settings_view = ChronoShiftStakeView(state_view=None)
         mock_settings_view.return_value.get_setting.return_value = 0
         self.assertEqual(poet_settings_view.block_claim_delay, 0)
-        poet_settings_view = ChronoShiftSettingsView(state_view=None)
+        poet_settings_view = ChronoShiftStakeView(state_view=None)
         mock_settings_view.return_value.get_setting.return_value = 1
         self.assertEqual(poet_settings_view.block_claim_delay, 1)
 
@@ -83,7 +87,8 @@ class TestPoetSettingsView(unittest.TestCase):
         cases (missing, invalid format, invalid value) as well as valid case.
         """
 
-        poet_settings_view = ChronoShiftSettingsView(state_view=None)
+        #poet_settings_view = ChronoShiftSettingsView(state_view=None)
+        poet_settings_view = ChronoShiftStakeView(state_view=None)
 
         # Simulate an underlying error parsing value
         mock_settings_view.return_value.get_setting.side_effect = \
@@ -105,7 +110,8 @@ class TestPoetSettingsView(unittest.TestCase):
         # Underlying config setting is not a valid value
         mock_settings_view.return_value.get_setting.side_effect = None
         mock_settings_view.return_value.get_setting.return_value = ''
-        poet_settings_view = ChronoShiftSettingsView(state_view=None)
+        #poet_settings_view = ChronoShiftSettingsView(state_view=None)
+        poet_settings_view = ChronoShiftStakeView(state_view=None)
         self.assertEqual(
             poet_settings_view.enclave_module_name,
             TestPoetSettingsView._EXPECTED_DEFAULT_ENCLAVE_MODULE_NAME_)
@@ -113,7 +119,7 @@ class TestPoetSettingsView(unittest.TestCase):
         # Underlying config setting is a valid value
         mock_settings_view.return_value.get_setting.return_value = \
             'valid value'
-        poet_settings_view = ChronoShiftSettingsView(state_view=None)
+        poet_settings_view = ChronoShiftStakeView(state_view=None)
         self.assertEqual(poet_settings_view.enclave_module_name, 'valid value')
 
     def test_initial_wait_time(self, mock_settings_view):
@@ -121,7 +127,8 @@ class TestPoetSettingsView(unittest.TestCase):
         (missing, invalid format, invalid value) as well as valid case.
         """
 
-        poet_settings_view = ChronoShiftSettingsView(state_view=None)
+        #poet_settings_view = ChronoShiftSettingsView(state_view=None)
+        poet_settings_view = ChronoShiftStakeView(state_view=None)
 
         # Simulate an underlying error parsing value
         mock_settings_view.return_value.get_setting.side_effect = \
@@ -146,14 +153,15 @@ class TestPoetSettingsView(unittest.TestCase):
                 [-100.0, -1.0, float('nan'), float('inf'), float('-inf')]:
             mock_settings_view.return_value.get_setting.return_value = \
                 bad_value
-            poet_settings_view = ChronoShiftSettingsView(state_view=None)
+            #poet_settings_view = ChronoShiftSettingsView(state_view=None)
+            poet_settings_view = ChronoShiftStakeView(state_view=None)
             self.assertEqual(
                 poet_settings_view.initial_wait_time,
                 TestPoetSettingsView._EXPECTED_DEFAULT_INITIAL_WAIT_TIME_)
 
         # Underlying config setting is a valid value
         mock_settings_view.return_value.get_setting.return_value = 3.1415
-        poet_settings_view = ChronoShiftSettingsView(state_view=None)
+        poet_settings_view = ChronoShiftStakeView(state_view=None)
         self.assertEqual(poet_settings_view.initial_wait_time, 3.1415)
 
     def test_key_block_claim_limit(self, mock_settings_view):
@@ -161,7 +169,8 @@ class TestPoetSettingsView(unittest.TestCase):
         cases (missing, invalid format, invalid value) as well as valid case.
         """
 
-        poet_settings_view = ChronoShiftSettingsView(state_view=None)
+        #poet_settings_view = ChronoShiftSettingsView(state_view=None)
+        poet_settings_view = ChronoShiftStakeView(state_view=None)
 
         # Simulate an underlying error parsing value
         mock_settings_view.return_value.get_setting.side_effect = \
@@ -185,14 +194,15 @@ class TestPoetSettingsView(unittest.TestCase):
         for bad_value in [-100, -1, 0]:
             mock_settings_view.return_value.get_setting.return_value = \
                 bad_value
-            poet_settings_view = ChronoShiftSettingsView(state_view=None)
+            #poet_settings_view = ChronoShiftSettingsView(state_view=None)
+            poet_settings_view = ChronoShiftStakeView(state_view=None)
             self.assertEqual(
                 poet_settings_view.key_block_claim_limit,
                 TestPoetSettingsView._EXPECTED_DEFAULT_KEY_BLOCK_CLAIM_LIMIT_)
 
         # Underlying config setting is a valid value
         mock_settings_view.return_value.get_setting.return_value = 1
-        poet_settings_view = ChronoShiftSettingsView(state_view=None)
+        poet_settings_view = ChronoShiftStakeView(state_view=None)
         self.assertEqual(poet_settings_view.key_block_claim_limit, 1)
 
     def test_population_estimate_sample_size(self, mock_settings_view):
@@ -201,7 +211,8 @@ class TestPoetSettingsView(unittest.TestCase):
         case.
         """
 
-        poet_settings_view = ChronoShiftSettingsView(state_view=None)
+        #poet_settings_view = ChronoShiftSettingsView(state_view=None)
+        poet_settings_view = ChronoShiftStakeView(state_view=None)
 
         # Simulate an underlying error parsing value
         mock_settings_view.return_value.get_setting.side_effect = \
@@ -229,7 +240,8 @@ class TestPoetSettingsView(unittest.TestCase):
         for bad_value in [-100, -1, 0]:
             mock_settings_view.return_value.get_setting.return_value = \
                 bad_value
-            poet_settings_view = ChronoShiftSettingsView(state_view=None)
+            #poet_settings_view = ChronoShiftSettingsView(state_view=None)
+            poet_settings_view = ChronoShiftStakeView(state_view=None)
             self.assertEqual(
                 poet_settings_view.population_estimate_sample_size,
                 TestPoetSettingsView.
@@ -237,7 +249,7 @@ class TestPoetSettingsView(unittest.TestCase):
 
         # Underlying config setting is a valid value
         mock_settings_view.return_value.get_setting.return_value = 1
-        poet_settings_view = ChronoShiftSettingsView(state_view=None)
+        poet_settings_view = ChronoShiftStakeView(state_view=None)
         self.assertEqual(poet_settings_view.population_estimate_sample_size, 1)
 
     def test_target_wait_time(self, mock_settings_view):
@@ -245,7 +257,7 @@ class TestPoetSettingsView(unittest.TestCase):
         (missing, invalid format, invalid value) as well as valid case.
         """
 
-        poet_settings_view = ChronoShiftSettingsView(state_view=None)
+        poet_settings_view = ChronoShiftStakeView(state_view=None)
 
         # Simulate an underlying error parsing value
         mock_settings_view.return_value.get_setting.side_effect = \
@@ -270,14 +282,14 @@ class TestPoetSettingsView(unittest.TestCase):
                 [-100.0, -1.0, 0.0, float('nan'), float('inf'), float('-inf')]:
             mock_settings_view.return_value.get_setting.return_value = \
                 bad_value
-            poet_settings_view = ChronoShiftSettingsView(state_view=None)
+            poet_settings_view = ChronoShiftStakeView(state_view=None)
             self.assertEqual(
                 poet_settings_view.target_wait_time,
                 TestPoetSettingsView._EXPECTED_DEFAULT_TARGET_WAIT_TIME_)
 
         # Underlying config setting is a valid value
         mock_settings_view.return_value.get_setting.return_value = 3.1415
-        poet_settings_view = ChronoShiftSettingsView(state_view=None)
+        poet_settings_view = ChronoShiftStakeView(state_view=None)
         self.assertEqual(poet_settings_view.target_wait_time, 3.1415)
 
     def test_signup_commit_maximum_delay(self, mock_settings_view):
@@ -285,7 +297,7 @@ class TestPoetSettingsView(unittest.TestCase):
         cases (missing, invalid format, invalid value) as well as valid case.
         """
 
-        poet_settings_view = ChronoShiftSettingsView(state_view=None)
+        poet_settings_view = ChronoShiftStakeView(state_view=None)
 
         # Simulate an underlying error parsing value
         mock_settings_view.return_value.get_setting.side_effect = \
@@ -313,7 +325,7 @@ class TestPoetSettingsView(unittest.TestCase):
         for bad_value in [-100, -1]:
             mock_settings_view.return_value.get_setting.return_value = \
                 bad_value
-            poet_settings_view = ChronoShiftSettingsView(state_view=None)
+            poet_settings_view = ChronoShiftStakeView(state_view=None)
             self.assertEqual(
                 poet_settings_view.signup_commit_maximum_delay,
                 TestPoetSettingsView.
@@ -321,7 +333,7 @@ class TestPoetSettingsView(unittest.TestCase):
 
         # Underlying config setting is a valid value
         mock_settings_view.return_value.get_setting.return_value = 123
-        poet_settings_view = ChronoShiftSettingsView(state_view=None)
+        poet_settings_view = ChronoShiftStakeView(state_view=None)
         self.assertEqual(poet_settings_view.signup_commit_maximum_delay, 123)
 
     def test_ztest_maximum_win_deviation(self, mock_settings_view):
@@ -330,7 +342,7 @@ class TestPoetSettingsView(unittest.TestCase):
         valid case.
         """
 
-        poet_settings_view = ChronoShiftSettingsView(state_view=None)
+        poet_settings_view = ChronoShiftStakeView(state_view=None)
 
         # Simulate an underlying error parsing value
         mock_settings_view.return_value.get_setting.side_effect = \
@@ -359,7 +371,7 @@ class TestPoetSettingsView(unittest.TestCase):
                 [-100.0, -1.0, 0.0, float('nan'), float('inf'), float('-inf')]:
             mock_settings_view.return_value.get_setting.return_value = \
                 bad_value
-            poet_settings_view = ChronoShiftSettingsView(state_view=None)
+            poet_settings_view = ChronoShiftStakeView(state_view=None)
             self.assertEqual(
                 poet_settings_view.ztest_maximum_win_deviation,
                 TestPoetSettingsView.
@@ -367,7 +379,7 @@ class TestPoetSettingsView(unittest.TestCase):
 
         # Underlying config setting is a valid value
         mock_settings_view.return_value.get_setting.return_value = 2.575
-        poet_settings_view = ChronoShiftSettingsView(state_view=None)
+        poet_settings_view = ChronoShiftStakeView(state_view=None)
         self.assertEqual(poet_settings_view.ztest_maximum_win_deviation, 2.575)
 
     def test_ztest_minimum_win_count(self, mock_settings_view):
@@ -376,7 +388,7 @@ class TestPoetSettingsView(unittest.TestCase):
         valid case.
         """
 
-        poet_settings_view = ChronoShiftSettingsView(state_view=None)
+        poet_settings_view = ChronoShiftStakeView(state_view=None)
 
         # Simulate an underlying error parsing value
         mock_settings_view.return_value.get_setting.side_effect = \
@@ -402,7 +414,7 @@ class TestPoetSettingsView(unittest.TestCase):
         for bad_value in [-100, -1]:
             mock_settings_view.return_value.get_setting.return_value = \
                 bad_value
-            poet_settings_view = ChronoShiftSettingsView(state_view=None)
+            poet_settings_view = ChronoShiftStakeView(state_view=None)
             self.assertEqual(
                 poet_settings_view.ztest_minimum_win_count,
                 TestPoetSettingsView.
@@ -410,5 +422,5 @@ class TestPoetSettingsView(unittest.TestCase):
 
         # Underlying config setting is a valid value
         mock_settings_view.return_value.get_setting.return_value = 0
-        poet_settings_view = ChronoShiftSettingsView(state_view=None)
+        poet_settings_view = ChronoShiftStakeView(state_view=None)
         self.assertEqual(poet_settings_view.ztest_minimum_win_count, 0)

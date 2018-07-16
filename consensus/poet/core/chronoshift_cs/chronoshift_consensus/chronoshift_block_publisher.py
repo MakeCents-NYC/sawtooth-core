@@ -53,6 +53,8 @@ from chronoshift_cs.chronoshift_consensus.wait_timer import WaitTimer
 from chronoshift_cs.chronoshift_consensus.wait_certificate import WaitCertificate
 from chronoshift_cs.chronoshift_consensus import utils
 
+from chronoshift_cs.chronoshift_consensus.chronoshift_stake_view import ChronoShiftStakeView
+#from chronoshift_cs.chronoshift_consensus.stake_view import StakeView
 #import sawtooth_poet_common.protobuf.validator_registry_pb2 as vr_pb
 
 
@@ -248,10 +250,10 @@ class ChronoShiftBlockPublisher(BlockPublisherInterface):
                 state_view_factory=self._state_view_factory,
                 consensus_state_store=self._consensus_state_store,
                 chronoshift_enclave_module=chronoshift_enclave_module)
-        chronoshift_settings_view = ChronoShiftSettingsView(state_view)
+        chronoshift_stake_view = ChronoShiftStakeView(state_view)
 
         if consensus_state.signup_attempt_timed_out(
-                signup_nonce, chronoshift_settings_view, self._block_cache):
+                signup_nonce, chronoshift_stake_view, self._block_cache):
             LOGGER.error('My poet registration using PPK %s has not '
                          'committed by block %s. Create new registration',
                          poet_public_key,
@@ -448,14 +450,14 @@ class ChronoShiftBlockPublisher(BlockPublisherInterface):
                 state_view_factory=self._state_view_factory,
                 consensus_state_store=self._consensus_state_store,
                 chronoshift_enclave_module=chronoshift_enclave_module)
-        chronoshift_settings_view = ChronoShiftSettingsView(state_view)
+        chronoshift_stake_view = ChronoShiftStakeView(state_view)
 
         # If our signup information does not pass the freshness test, then we
         # know that other validators will reject any blocks we try to claim so
         # we need to try to sign up again.
         if consensus_state.validator_signup_was_committed_too_late(
                 validator_info=validator_info,
-                chronoshift_settings_view=chronoshift_settings_view,
+                chronoshift_stake_view=chronoshift_stake_view,
                 block_cache=self._block_cache):
             LOGGER.info(
                 'Reject building on block %s: Validator signup information '
@@ -472,7 +474,7 @@ class ChronoShiftBlockPublisher(BlockPublisherInterface):
         # we need to check if the key has been refreshed.
         if consensus_state.validator_has_claimed_block_limit(
                 validator_info=validator_info,
-                chronoshift_settings_view=chronoshift_settings_view):
+                chronoshift_stake_view=chronoshift_stake_view):
             # Because we have hit the limit, check to see if we have already
             # submitted a validator registry transaction with new signup
             # information, and therefore a new PoET public key.  If not, then
@@ -517,6 +519,12 @@ class ChronoShiftBlockPublisher(BlockPublisherInterface):
                 block_header.previous_block_id[:8])
             return False
 
+        if consensus_state.validator_stakeamt_is_low(
+                validator_info=validator_info,
+                block_number=block_header.block_num,
+                chronoshift_stake_view=chronoshift_stake_view(state_view)):
+            return False
+
         # Verify that we are abiding by the block claim delay (i.e., waiting a
         # certain number of blocks since our validator registry was added/
         # updated).
@@ -525,7 +533,7 @@ class ChronoShiftBlockPublisher(BlockPublisherInterface):
                 block_number=block_header.block_num,
                 chronoshift_registry_view=chronoshift_registry_view,
                 #validator_registry_view=validator_registry_view,
-                chronoshift_settings_view=chronoshift_settings_view,
+                chronoshift_stake_view=chronoshift_stake_view,
                 block_store=self._block_cache.block_store):
             LOGGER.info(
                 'Reject building on block %s: Validator has not waited long '
@@ -549,7 +557,7 @@ class ChronoShiftBlockPublisher(BlockPublisherInterface):
                 validator_address=block_header.signer_public_key,
                 previous_certificate_id=previous_certificate_id,
                 consensus_state=consensus_state,
-                chronoshift_settings_view=chronoshift_settings_view)
+                chronoshift_stake_view=chronoshift_stake_view)
 
         # NOTE - we do the zTest after we create the wait timer because we
         # need its population estimate to see if this block would be accepted
@@ -562,9 +570,9 @@ class ChronoShiftBlockPublisher(BlockPublisherInterface):
         if consensus_state.validator_is_claiming_too_frequently(
                 validator_info=validator_info,
                 previous_block_id=block_header.previous_block_id,
-                chronoshift_settings_view=chronoshift_settings_view,
+                chronoshift_stake_view=chronoshift_stake_view,
                 population_estimate=wait_timer.population_estimate(
-                    chronoshift_settings_view=chronoshift_settings_view),
+                    chronoshift_stake_view=chronoshift_stake_view),
                 block_cache=self._block_cache,
                 chronoshift_enclave_module=chronoshift_enclave_module):
             LOGGER.info(

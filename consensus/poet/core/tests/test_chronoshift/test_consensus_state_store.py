@@ -107,6 +107,7 @@ class TestConsensusStateStore(unittest.TestCase):
         mock_chronoshift_settings_view.target_wait_time = 30.0
         mock_chronoshift_settings_view.initial_wait_time = 3000.0
         mock_chronoshift_settings_view.population_estimate_sample_size = 50
+        #mock_chronoshift_settings_view.
 
         store = \
             consensus_state_store.ConsensusStateStore(
@@ -149,7 +150,7 @@ class TestConsensusStateStore(unittest.TestCase):
         state.validator_did_claim_block(
             validator_info=validator_info,
             wait_certificate=wait_certificate,
-            chronoshift_settings_view=mock_chronoshift_settings_view)
+            chronoshift_stake_view=mock_chronoshift_settings_view)
         store['key'] = state
 
         # Verify the length and contains key

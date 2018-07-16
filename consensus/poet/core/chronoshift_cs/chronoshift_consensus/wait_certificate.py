@@ -176,7 +176,7 @@ class WaitCertificate(object):
                     previous_certificate_id,
                     poet_public_key,
                     consensus_state,
-                    chronoshift_settings_view):
+                    chronoshift_stake_view):
         """Determines whether the wait certificate is valid.
 
         Args:
@@ -198,7 +198,7 @@ class WaitCertificate(object):
             self._enclave_wait_certificate(chronoshift_enclave_module)
         expected_mean = \
             consensus_state.compute_local_mean(
-                chronoshift_settings_view=chronoshift_settings_view)
+                chronoshift_stake_view=chronoshift_stake_view)
 
         if not _is_close(
                 enclave_certificate.local_mean,
