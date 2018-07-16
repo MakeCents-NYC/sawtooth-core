@@ -34,15 +34,15 @@ from makecents_cash.protobuf.stake_payload_pb2 import LockStakeTransactionData
 
 LOGGER = logging.getLogger(__name__)
 
-# The identity namespace is special: it is not derived from a hash.
-STAKE_NAMESPACE = '807062'
+# sha512('cash'.encode('utf-8')).hexdump[:6]
+CASH_NAMESPACE = '3b905b'
 _DEFAULT_TYPE_PREFIX = '00'
 _ADDRESS_PART_SIZE = 62
 
 
-def _stake_to_address(owner_pub):
-    addr_part = _to_hash(owner_pub)[:_ADDRESS_PART_SIZE]
-    return STAKE_NAMESPACE + _DEFAULT_TYPE_PREFIX + addr_part
+def _cash_to_address(owner_id):
+    addr_part = _to_hash(owner_id)[:_ADDRESS_PART_SIZE]
+    return CASH_NAMESPACE + _DEFAULT_TYPE_PREFIX + addr_part
 
 # Constants to be used when constructing config namespace addresses
 _SETTING_NAMESPACE = '000000'
@@ -91,27 +91,6 @@ _SETTING_ADDRESS_PADDING = _setting_short_hash(byte_str=b'')
 ALLOWED_SIGNER_ADDRESS = _setting_key_to_address(
     "sawtooth.stake.allowed_keys")
 
-NAMESPACE = '00b10c'
-BLOCK_INFO_NAMESPACE = NAMESPACE + '00'
-BLOCK_CONFIG_ADDRESS = NAMESPACE + '01' + '0' * 62
-
-
-def create_block_address(block_num):
-    return BLOCK_INFO_NAMESPACE + hex(block_num)[2:].zfill(62)
-
-
-def _check_block_number(context):
-    bc = _get_data(BLOCK_CONFIG_ADDRESS, context)
-    if not bc:
-        raise InvalidTransaction(
-            "There doesn't appear to be a block_config stored here."
-            " Are you sure there is a block_info" 
-            " transaction processor component configured?")
-
-    block_config = BlockInfoConfig()
-    block_config.ParseFromString(bc[0].data)
-    return block_config.latest_block
-
 
 def _check_allowed_minter(minting_key, context):
     entries_list = _get_data(ALLOWED_SIGNER_ADDRESS, context)
@@ -123,7 +102,7 @@ def _check_allowed_minter(minting_key, context):
     setting = Setting()
     setting.ParseFromString(entries_list[0].data)
     for entry in setting.entries:
-        if entry.key == "sawtooth.stake.allowed_keys":
+        if entry.key == "makecents.cash.allowed_keys":
             allowed_signer = entry.value.split(",")
             LOGGER.info('minting key: {}'.format(allowed_signer))
             if minting_key == allowed_signer[0]:

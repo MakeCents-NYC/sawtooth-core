@@ -1,0 +1,45 @@
+// protobuf
+message CashPayload {
+    // Used to type the message coming into transaction
+    // processor.
+    enum PayloadType {
+        SEND_CASH = 1;
+        BURN_CASH = 2;
+        MINT_CASH = 3;
+    }
+    //The type from above
+    PayloadType payload_type = 1;
+    SendCashTransactionData = 2;
+    BurnCashTransactionData = 3;
+    MintCashTransactionData = 4;
+}
+
+message SendCashTransactionData {
+    // the cash state_identifier to be credited
+    string to_identifier = 1;
+    // the cash state_identifier to be debited
+    string from_identifier = 2;
+    // the value of the transaction
+    string amount = 3;
+    // flag specifying that the to_identifier is a public_key,
+    // and that if the account does not exist then it should be
+    // created with the 'owner' = 'to_identifier'.
+    bool is_public_key = 4; // default to False.
+}
+
+// specifies the Holding to which this s
+message BurnCashTransactionData {
+    // the Cash to be destroyed
+    string from_cash_identifier = 1;
+    // the Gold Holding to be authorized
+    string to_holding_identifier = 2;
+}
+
+// specifies the Holding containing MCG from
+// which this cash will be minted.
+message MintCashTransactionData {
+    // where the cash will be created
+    string to_cash_identifier = 1;
+    // where the gold was destroyed to authorize this.
+    string from_holding_identifier = 2;
+}

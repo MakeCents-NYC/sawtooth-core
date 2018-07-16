@@ -1,0 +1,57 @@
+// Copyright 2017 Intel Corporation
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+// -----------------------------------------------------------------------------
+
+syntax = "proto3";
+
+option java_multiple_files = true;
+option java_package = "makecents.cash.protobuf";
+
+// The actually representation of an ''account'' like in ethereum.
+message Cash {
+    // A counter for tracking unique operations to this wallet
+    int64 nonce = 1;
+
+    // The public key of the owner of this account
+    string owner = 2;
+
+        // The public key of the owner of this account
+    string curator = 3;
+
+    // The value of stake stored in this account.
+    string balance = 4;
+}
+
+message CashList {
+    // In case of collisions, we store a list
+    repeated Cash = 1;
+}
+
+// What is stored in a slightly different namespace in after each mint and
+// melt operation.
+message MintResidue {
+    // A counter for tracking unique operations to this wallet
+    string holding_residue = 1;
+    // The public key of the owner of this account
+    string owner = 2;
+}
+
+// The actually representation of an ''account'' like in ethereum.
+message BurnResidue {
+    // A counter for tracking unique operations to this wallet
+    string holding_residue = 1;
+
+    // The public key of the owner of this account
+    string owner = 2;
+}
