@@ -1089,11 +1089,15 @@ class ConsensusState(object):
                 validators)
 
     def validator_stakeamt_is_low(self,validator_info,block_Number,chronoshift_stake_view):
-        minimum_stake_amt = self.MIN_STAKE_AMT
-        key = validator_info.signup_info.poet_public_key
-        stake_value = chronoshift_stake_view._get_stake(key)
-        if stake_value < minimum_stake_amt:
-            return True
+
+        try:
+            minimum_stake_amt = self.MIN_STAKE_AMT
+            key = validator_info.signup_info.poet_public_key
+            stake_value = chronoshift_stake_view._get_stake(key)
+            if stake_value < minimum_stake_amt:
+                return True
+        except KeyError:
+            LOGGER.error('Failed to retrieve block: %s')
         return False
 
 

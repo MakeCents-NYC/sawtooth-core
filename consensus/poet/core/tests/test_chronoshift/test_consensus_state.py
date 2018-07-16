@@ -886,7 +886,6 @@ class TestConsensusState(TestCase):
                         chronoshift_stake_view=mock_chronoshift_stake_view,
                         block_cache=mock_block_cache))
 
-
     def test_stakeamt_low(self):
         """Verify that consensus state properly indicates whether or not a
         validator has reached the block claim limit
@@ -897,7 +896,7 @@ class TestConsensusState(TestCase):
         mock_chronoshift_stake_view.key_block_claim_limit = 10
         mock_chronoshift_stake_view.population_estimate_sample_size = 50
 
-
+        state_view_factory = mock.Mock()
 
         validator_info = \
             CValidatorInfo(
@@ -905,7 +904,8 @@ class TestConsensusState(TestCase):
                 signup_info=CSignUpInfo(
                     poet_public_key='key_001'))
         state = consensus_state.ConsensusState()
-        chronoshift_stake_view = ChronoShiftStakeView(state_view=None)
+        state_view = state_view_factory.create_view(state_root_hash=None)
+        chronoshift_stake_view = ChronoShiftStakeView(state_view)
         # Verify that validator does not trigger key block claim limit and also
         # "claim" blocks
         self.assertFalse(
