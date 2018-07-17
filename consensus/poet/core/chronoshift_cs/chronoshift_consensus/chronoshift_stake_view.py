@@ -92,8 +92,9 @@ class StakeView(object):
             if not sender_stake_list.stakeMap[key]:
                 raise Exception('This sign_up information doesnt own any stake here')
             # ensure the signer is allowed to do this.
-            if _check_allowed_signer(sender_stake.ownerPubKey, key):
-                return sender_stake
+            if _check_allowed_signer(sender_stake.StakeMap[key].ownerPubKey, key):
+                # return the value and block number as a tuple
+                return sender_stake.StakeMap[key].value, sender_stake.StakeMap[key].blockNumber
         # return the value stored there.
         return None
 

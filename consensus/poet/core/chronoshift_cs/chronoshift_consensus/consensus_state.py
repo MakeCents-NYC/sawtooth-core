@@ -30,7 +30,7 @@ from chronoshift_cs.chronoshift_consensus.chronoshift_settings_view import Chron
 from chronoshift.chronoshift_registry_view.chronoshift_registry_view \
     import ChronoShiftRegistryView
 
-from stake.protobuf.stake_pb2 import Stake
+from stake.protobuf.stake_pb2 import StakeList
 
 from chronoshift_simulator.chronoshift_enclave_simulator.chronoshift_enclave_simulator \
     import _ChronoShiftEnclaveSimulator
@@ -1050,49 +1050,53 @@ class ConsensusState(object):
         # Retrieve from chronoshift_settings_view
         minimum_stake_amt = chronoshift_settings_view.minimum_stake_amt
 
-        validator_stake = chronoshift_stake_view.get_stake(validator_info.id)
+        # returns a stakeList :(
+        validator_balance, validator_lock = chronoshift_stake_view.get_stake(validator_info.id)
+
+        # returns a named tuple Stake(value=*, blockNumber=*)
+        #validator_stake = StakeList()
+        #validator_stake.ParseFromString(validator_stake)
 
         if not (isinstance(
-            validator_stake.stake.balance, float)
-                or validator_stake.stake.balance < 0):
+                validator_balance, float)
+                or validator_balance < 0):
             raise \
                 ValueError(
                     'stake_balance ({}) is invalid'.format(
-                        validator_stake.stake.balance))
+                        validator_balance))
 
         if not (isinstance(
-            validator_stake.stake.blockNumber, int)
-                or validator_stake.stake.blockNumber < 0):
+                validator_lock, int)
+                or validator_lock < 0):
             raise \
                 ValueError(
                     'stake_lock block number ({}) is invalid'.format(
-                        validator_stake.stake.blockNumber))
-        if validator_stake.balance < minimum_stake_amt:
+                        validator_lock))
+        if validator_balance < minimum_stake_amt:
             LOGGER.info(
                 'Validator %s (ID=%s...%s): failed min stake requirement '
                 'balance=%f, required=%f',
                 validator_info.name,
                 validator_info.id[:8],
                 validator_info.id[-8:],
-                validator_stake.balance,
+                validator_balance,
                 minimum_stake_amt)
             return True
         # if the lock is less than the current block number, then it is
         # not locked and it is invalid.
-        if validator_stake.blockNumber < block_number:
+        if validator_lock < block_number:
             LOGGER.info(
                 'Validator %s (ID=%s...%s): failed locked stake requirement '
                 'stake_lock_expired=%f, current_block=%f',
                 validator_info.name,
                 validator_info.id[:8],
                 validator_info.id[-8:],
-                validator_stake.blockNumber,
+                validator_lock,
                 block_number)
             return True
 
         # means it passes this test.
         return False
-
 
     def serialize_to_bytes(self):
         """Serialized the consensus state object to a byte string suitable

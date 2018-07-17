@@ -70,8 +70,7 @@ class StakeView(object):
         Args:
             key (str): the stake key
         Returns:
-            float: The value of stake stored at a specific state address and
-            public_key
+            StakeList (deserialized)
         """
         try:
             state_entry = self._state_view.get(
@@ -92,7 +91,7 @@ class StakeView(object):
             if not sender_stake_list.stakeMap[key]:
                 raise Exception('This sign_up information doesnt own any stake here')
             # ensure the signer is allowed to do this.
-            if _check_allowed_signer(sender_stake.ownerPubKey, key):
+            if _check_allowed_signer(sender_stake[key].ownerPubKey, key):
                 return sender_stake
         # return the value stored there.
         return None

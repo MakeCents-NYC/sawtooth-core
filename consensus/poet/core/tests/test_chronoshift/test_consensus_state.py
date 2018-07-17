@@ -28,6 +28,9 @@ from chronoshift.protobuf.chronoshift_registry_pb2 \
 from chronoshift.protobuf.chronoshift_registry_pb2 \
     import CSignUpInfo
 
+from stake.protobuf.stake_pb2 import StakeList
+from stake.protobuf.stake_pb2 import Stake
+
 
 from chronoshift_cs.chronoshift_consensus.chronoshift_settings_view import ChronoShiftSettingsView
 
@@ -879,34 +882,44 @@ class TestConsensusState(TestCase):
         """Verify that consensus state properly indicates whether or not a
         validator has reached the block claim limit
         """
-
-        mock_block = mock.Mock()
         mock_chronoshift_settings_view = mock.Mock()
         mock_chronoshift_settings_view.key_block_claim_limit = 10
         mock_chronoshift_settings_view.population_estimate_sample_size = 50
+        mock_chronoshift_settings_view.minimum_stake_amt = 5.0
 
         mock_chronoshift_stake_view = mock.Mock()
 
+        data = StakeList()
+        data.stakeMap.get_or_create('validator_001')
+        data.stakeMap['validator_001'].value = 50.0
+        data.stakeMap['validator_001'].ownerPubKey = 'validator_001'
+        data.stakeMap['validator_001'].nonce = 1
+        data.stakeMap['validator_001'].blockNumber = 100
+        data.SerializeToString()
+
+        mock_chronoshift_stake_view = mock.Mock()
+        mock_chronoshift_stake_view.get_stake.return_value = (50.0, 100)
 
         validator_info = \
             CValidatorInfo(
                 id='validator_001',
                 signup_info=CSignUpInfo(
-                    poet_public_key='key_001'))
+                    poet_public_key='key_001',
+                    stake_address='validator_001'))
 
         state = consensus_state.ConsensusState()
 
         self.assertFalse(
             state.validator_is_using_invalid_stake(
                     validator_info=validator_info,
-                    block_number=1,
-                    chronoshift_stake_view=mock_chronoshift_stake_view,
-                    chronoshift_settings_view=mock_chronoshift_settings_view))
-        state.validator_is_using_invalid_stake(
-                validator_info=validator_info,
-                block_number=mock_block.header.block_number,
-                chronoshift_settings_view=mock_chronoshift_settings_view,
-                mock_chronoshift_stake_view=mock_chronoshift_stake_view)
+                    block_number=99,
+                    chronoshift_settings_view=mock_chronoshift_settings_view,
+                    chronoshift_stake_view=mock_chronoshift_stake_view))
+        # state.validator_is_using_invalid_stake(
+        #         validator_info=validator_info,
+        #         block_number=mock_block.header.block_number,
+        #         chronoshift_settings_view=mock_chronoshift_settings_view,
+        #         mock_chronoshift_stake_view=mock_chronoshift_stake_view)
 
         # Now that validator has claimed limit for key, verify that it triggers
         # the test
