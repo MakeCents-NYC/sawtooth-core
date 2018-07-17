@@ -17,7 +17,7 @@ import threading
 import importlib
 import logging
 
-from chronoshift_cs.chronoshift_consensus.chronoshift_stake_view import ChronoShiftStakeView
+from chronoshift_cs.chronoshift_consensus.chronoshift_settings_view import ChronoShiftSettingsView
 LOGGER = logging.getLogger(__name__)
 
 

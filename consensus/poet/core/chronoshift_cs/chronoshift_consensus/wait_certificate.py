@@ -159,7 +159,7 @@ class WaitCertificate(object):
                 self.identifier,
                 self.previous_certificate_id)
 
-    def population_estimate(self, poet_settings_view):
+    def population_estimate(self, chronoshift_settings_view):
         """Return the population estimate for the block associated with this
         wait certificate.
 
@@ -169,14 +169,14 @@ class WaitCertificate(object):
         Returns:
             float: The population estimate
         """
-        return self.local_mean / poet_settings_view.target_wait_time
+        return self.local_mean / chronoshift_settings_view.target_wait_time
 
     def check_valid(self,
                     chronoshift_enclave_module,
                     previous_certificate_id,
                     poet_public_key,
                     consensus_state,
-                    chronoshift_stake_view):
+                    chronoshift_settings_view):
         """Determines whether the wait certificate is valid.
 
         Args:
@@ -190,7 +190,7 @@ class WaitCertificate(object):
                 that is the originator of the block for which the wait
                 certificate is associated.
             consensus_state (ConsensusState): The current PoET consensus state
-            poet_settings_view (PoetSettingsView): The current PoET config view
+            chronoshift_settings_view (ChronoShiftSettings): The current PoET config view
         Returns:
             True if the wait certificate is valid, False otherwise.
         """
@@ -198,7 +198,7 @@ class WaitCertificate(object):
             self._enclave_wait_certificate(chronoshift_enclave_module)
         expected_mean = \
             consensus_state.compute_local_mean(
-                chronoshift_stake_view=chronoshift_stake_view)
+                chronoshift_settings_view=chronoshift_settings_view)
 
         if not _is_close(
                 enclave_certificate.local_mean,

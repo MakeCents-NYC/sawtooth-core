@@ -29,15 +29,14 @@ from sawtooth_validator.journal.consensus.consensus \
 from chronoshift_cs.chronoshift_consensus.consensus_state import ConsensusState
 from chronoshift_cs.chronoshift_consensus.consensus_state_store \
      import ConsensusStateStore
-#from chronoshift_cs.chronoshift_consensus.chronoshift_settings_view import ChronoShiftSettingsView
 from chronoshift_cs.chronoshift_consensus import chronoshift_enclave_factory as factory
 from chronoshift_cs.chronoshift_consensus import utils
 
 
 from chronoshift.chronoshift_registry_view.chronoshift_registry_view \
     import ChronoShiftRegistryView
-from chronoshift_cs.chronoshift_consensus.chronoshift_stake_view \
-    import ChronoShiftStakeView
+from chronoshift_cs.chronoshift_consensus.chronoshift_settings_view \
+    import ChronoShiftSettingsView
 
 
 
@@ -171,7 +170,7 @@ class ChronoShiftBlockVerifier(BlockVerifierInterface):
                 state_view_factory=self._state_view_factory,
                 consensus_state_store=self._consensus_state_store,
                 chronoshift_enclave_module=chronoshift_enclave_module)
-        chronoshift_stake_view = ChronoShiftStakeView(state_view=state_view)
+        chronoshift_settings_view = ChronoShiftSettingsView(state_view=state_view)
 
         previous_certificate_id = \
             utils.get_previous_certificate_id(
@@ -184,7 +183,7 @@ class ChronoShiftBlockVerifier(BlockVerifierInterface):
                 previous_certificate_id=previous_certificate_id,
                 poet_public_key=validator_info.signup_info.poet_public_key,
                 consensus_state=consensus_state,
-                chronoshift_stake_view=chronoshift_stake_view)
+                chronoshift_settings_view=chronoshift_settings_view)
         except ValueError as error:
             LOGGER.error(
                 'Block %s rejected: Wait certificate check failed - %s',
@@ -196,7 +195,7 @@ class ChronoShiftBlockVerifier(BlockVerifierInterface):
         # freshness check.
         if consensus_state.validator_signup_was_committed_too_late(
                 validator_info=validator_info,
-                chronoshift_stake_view=chronoshift_stake_view,
+                chronoshift_settings_view=chronoshift_settings_view,
                 block_cache=self._block_cache):
             LOGGER.error(
                 'Block %s rejected: Validator signup information not '
@@ -208,7 +207,7 @@ class ChronoShiftBlockVerifier(BlockVerifierInterface):
         # limit for its current PoET key pair.
         if consensus_state.validator_has_claimed_block_limit(
                 validator_info=validator_info,
-                chronoshift_stake_view=chronoshift_stake_view):
+                chronoshift_settings_view=chronoshift_settings_view):
             LOGGER.error(
                 'Block %s rejected: Validator has reached maximum number of '
                 'blocks with key pair.',
@@ -224,7 +223,7 @@ class ChronoShiftBlockVerifier(BlockVerifierInterface):
                 block_number=block_wrapper.block_num,
                 #validator_registry_view=validator_registry_view,
                 chronoshift_registry_view=chronoshift_registry_view,
-                chronoshift_stake_view=chronoshift_stake_view,
+                chronoshift_settings_view=chronoshift_settings_view,
                 block_store=self._block_cache.block_store):
             LOGGER.error(
                 'Block %s rejected: Validator has not waited long enough '
@@ -237,9 +236,9 @@ class ChronoShiftBlockVerifier(BlockVerifierInterface):
         if consensus_state.validator_is_claiming_too_frequently(
                 validator_info=validator_info,
                 previous_block_id=block_wrapper.previous_block_id,
-                chronoshift_stake_view=chronoshift_stake_view,
+                chronoshift_settings_view=chronoshift_settings_view,
                 population_estimate=wait_certificate.population_estimate(
-                    chronoshift_stake_view=chronoshift_stake_view),
+                    chronoshift_settings_view=chronoshift_settings_view),
                 block_cache=self._block_cache,
                 chronoshift_enclave_module=chronoshift_enclave_module):
             LOGGER.error(
@@ -251,7 +250,7 @@ class ChronoShiftBlockVerifier(BlockVerifierInterface):
         if consensus_state.validator_stakeamt_is_low(
                 validator_info=validator_info,
                 block_number=block_wrapper.header.block_num,
-                chronoshift_stake_view=chronoshift_stake_view(state_view)):
+                chronoshift_settings_view=chronoshift_settings_view(state_view)):
             return False
 
         #Reject the block if the sign up information associated with the stake address

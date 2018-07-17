@@ -13,27 +13,22 @@
 # limitations under the License.
 # ------------------------------------------------------------------------------
 
-import math
-import logging
 import hashlib
 from functools import lru_cache
 
-from sawtooth_validator.state.settings_view import SettingsView
-
+# from sawtooth_validator.protobuf.stake_pb2 import StakeList
+# from sawtooth_validator.protobuf.stake_pb2 import Stake
 
 from stake.protobuf.stake_pb2 import StakeList
 from stake.protobuf.stake_pb2 import Stake
-from stake.protobuf.stake_payload_pb2 import StakePayload
 
+from sawtooth_validator.state.settings_view import SettingsView
 
 # The identity namespace is special: it is not derived from a hash.
 STAKE_NAMESPACE = '807062'
 _DEFAULT_TYPE_PREFIX = '00'
 _ADDRESS_PART_SIZE = 62
 
-
-
-LOGGER = logging.getLogger(__name__)
 
 def _to_hash(value):
     return hashlib.sha256(value.encode()).hexdigest()
@@ -47,329 +42,28 @@ def _check_allowed_signer(signing_key, stake_owner):
         "This is not the owner of the stake")
 
 
-class ChronoShiftStakeView(object):
-    """A class to wrap the retrieval of Chronoshift configuration settings from the
-    configuration view.  For values that are not in the current state view
-    or that are invalid, default values are returned.
+class StakeView(object):
+    """
+    A StakeView provides access to on-chain configuration stake.
+
+    The Config view provides access to configuration stake stored at a
+    particular merkle tree root. This access is read-only.
     """
 
-    _BLOCK_CLAIM_DELAY_ = 1
-    _ENCLAVE_MODULE_NAME_ = \
-        'chronoshift_simulator.chronoshift_enclave_simulator.chronoshift_enclave_simulator'
-        #'sawtooth_poet_simulator.poet_enclave_simulator.poet_enclave_simulator'
-    _INITIAL_WAIT_TIME_ = 3000.0
-    _KEY_BLOCK_CLAIM_LIMIT_ = 250
-    # pylint: disable=invalid-name
-    _POPULATION_ESTIMATE_SAMPLE_SIZE_ = 50
-    _REGISTRATION_RETRY_DELAY_ = 10
-    _SIGNUP_COMMIT_MAXIMUM_DELAY_ = 10
-    _TARGET_WAIT_TIME_ = 20.0
-    _ZTEST_MAXIMUM_WIN_DEVIATION_ = 3.075
-    _ZTEST_MINIMUM_WIN_COUNT_ = 3
-    _MINIMUM_STAKE_AMT =5.0
-
     def __init__(self, state_view):
-        """Initialize a ChronoshiftSettingsView object.
+        """Creates a StakeView, given a StateView for merkle tree access.
 
         Args:
-            state_view (StateView): The current state view.
-
-        Returns:
-            None
+            state_view (:obj:`StateView`): a state view
         """
         self._state_view = state_view
-        self._settings_view = SettingsView(state_view)
-        self._block_claim_delay = None
-        self._enclave_module_name = None
-        self._initial_wait_time = None
-        self._key_block_claim_limit = None
-        self._population_estimate_sample_size = None
-        self._registration_retry_delay = None
-        self._signup_commit_maximum_delay = None
-        self._target_wait_time = None
-        self._ztest_maximum_win_deviation = None
-        self._ztest_minimum_win_count = None
-        self._stake_amt = None
+        # self._settings_view = SettingsView(state_view)
+
+        # The public method for get_stake should have its results memoized
+        # via an lru_cache.  Typical use of the decorator results in the
+        # cache being global, which can cause views to return incorrect
+        # values across state root hash boundaries.
         self.get_stake = lru_cache(maxsize=128)(self._get_stake)
-
-    def _get_config_setting(self,
-                            name,
-                            value_type,
-                            default_value,
-                            validate_function=None):
-        """Retrieves a value from the config view, returning the default value
-        if does not exist in the current state view or if the value is
-        invalid.
-
-        Args:
-            name (str): The config setting to return.
-            value_type (type): The value type, for example, int, float, etc.,
-                of config value.
-            default_value (object): The default value to be used if no value
-                found or if value in config is invalid, for example, a
-                non-integer value for an int config setting.
-            validate_function (function): An optional function that can be
-                applied to the setting to determine validity.  The function
-                should return True if setting is valid, False otherwise.
-
-        Returns:
-            The value for the config setting.
-        """
-
-        try:
-            value = \
-                self._settings_view.get_setting(
-                    key=name,
-                    default_value=default_value,
-                    value_type=value_type)
-
-            if validate_function is not None:
-                if not validate_function(value):
-                    raise \
-                        ValueError(
-                            'Value ({}) for {} is not valid'.format(
-                                value,
-                                name))
-        except ValueError:
-            value = default_value
-
-        return value
-
-    @property
-    def block_claim_delay(self):
-        """Return the block claim delay if config setting exists and
-        is valid, otherwise return the default.
-
-        The block claim delay is the number of blocks after a validator's
-        signup information is committed to the validator registry before
-        it can claim a block.
-        """
-        if self._block_claim_delay is None:
-            self._block_claim_delay = \
-                self._get_config_setting(
-                    name='chronoshift.block_claim_delay',
-                    value_type=int,
-                    default_value=ChronoShiftStakeView._BLOCK_CLAIM_DELAY_,
-                    validate_function=lambda value: value >= 0)
-
-        return self._block_claim_delay
-
-    @property
-    def enclave_module_name(self):
-        """Return the enclave module name if config setting exists and is
-        valid, otherwise return the default.
-
-        The enclave module name is the name of the Python module containing the
-        implementation of the underlying PoET enclave.
-        """
-        if self._enclave_module_name is None:
-            self._enclave_module_name = \
-                self._get_config_setting(
-                    name='chronoshift.enclave_module_name',
-                    value_type=str,
-                    default_value=ChronoShiftStakeView._ENCLAVE_MODULE_NAME_,
-                    # function should return true if value is nonempty
-                    validate_function=lambda value: value)
-
-        return self._enclave_module_name
-
-    @property
-    def initial_wait_time(self):
-        """Return the initial wait time if config setting exists and is valid,
-        otherwise return the default.
-
-        The initial wait time is used during the bootstrapping of the block-
-        chain to compute the local mean for wait timers until there are at
-        least population_estimate_sample_size PoET blocks in the blockchain.
-        """
-        if self._initial_wait_time is None:
-            self._initial_wait_time = \
-                self._get_config_setting(
-                    name='chronoshift.initial_wait_time',
-                    value_type=float,
-                    default_value=ChronoShiftStakeView._INITIAL_WAIT_TIME_,
-                    validate_function=lambda value:
-                        math.isfinite(value) and value >= 0)
-
-        return self._initial_wait_time
-
-    @property
-    def key_block_claim_limit(self):
-        """Return the key block claim limit if config setting exists and
-        is valid, otherwise return the default.
-
-        The key block claim limit is the maximum number of blocks that a
-        validator may claim with a PoET key pair before it needs to refresh
-        its signup information.
-        """
-        if self._key_block_claim_limit is None:
-            self._key_block_claim_limit = \
-                self._get_config_setting(
-                    name='chronoshift.key_block_claim_limit',
-                    value_type=int,
-                    default_value=ChronoShiftStakeView._KEY_BLOCK_CLAIM_LIMIT_,
-                    validate_function=lambda value: value > 0)
-
-        return self._key_block_claim_limit
-
-    @property
-    def population_estimate_sample_size(self):
-        """Return the population estimate sample size if config setting exists
-        and is valid, otherwise return the default.
-
-        The population estimate sample size is the number of most-recent blocks
-        that will be used when estimating the population size after the block-
-        chain has been bootstrapped (i.e., at least
-        population_estimate_sample_size blocks have been added to the
-        blockchain) and subsequently used to compute the local mean for a new
-        wait timer.
-
-        Until population_estimate_sample_size blocks are in the
-        blockchain, the local mean computed for a wait timer is based upon the
-        ratio of the target and initial wait times.
-        """
-        if self._population_estimate_sample_size is None:
-            self._population_estimate_sample_size = \
-                self._get_config_setting(
-                    name='chronoshift.population_estimate_sample_size',
-                    value_type=int,
-                    default_value=ChronoShiftStakeView.
-                    _POPULATION_ESTIMATE_SAMPLE_SIZE_,
-                    validate_function=lambda value: value > 0)
-
-        return self._population_estimate_sample_size
-
-    @property
-    def registration_retry_delay(self):
-        """The number of blocks to wait before assuming a registration
-        transaction failed.
-        """
-        if self._registration_retry_delay is None:
-            self._registration_retry_delay = \
-                self._get_config_setting(
-                    name='chronoshift._registration_retry_delay',
-                    value_type=int,
-                    default_value=ChronoShiftStakeView.
-                    _REGISTRATION_RETRY_DELAY_,
-                    validate_function=lambda value: value > 1)
-
-        return self._registration_retry_delay
-
-    @property
-    def signup_commit_maximum_delay(self):
-        """Return the signup commit maximum delay if config setting exists and
-        is valid, otherwise return the default.
-
-        The signup commit maximum delay is the maximum allowed number of blocks
-        between the head of the block chain when the signup information was
-        created and subsequent validator registry transaction was submitted and
-        when said transaction was committed to the blockchain.  For example, if
-        the signup commit maximum delay is one and the signup information's
-        containing validator registry transaction was created/submitted when
-        the blockchain head was block number 100, then the validator registry
-        transaction must have been committed either in block 101 (i.e., zero
-        blocks between 100 and 101) or block 102 (i.e., one block between 100
-        and 102).
-        """
-        if self._signup_commit_maximum_delay is None:
-            self._signup_commit_maximum_delay = \
-                self._get_config_setting(
-                    name='chronoshift.signup_commit_maximum_delay',
-                    value_type=int,
-                    default_value=ChronoShiftStakeView.
-                    _SIGNUP_COMMIT_MAXIMUM_DELAY_,
-                    validate_function=lambda value: value >= 0)
-
-        return self._signup_commit_maximum_delay
-
-    @property
-    def target_wait_time(self):
-        """Return the target wait time if config setting exists and is valid,
-        otherwise return the default.
-
-        The target wait time is the desired average amount of time, across all
-        validators in the network, a validator must wait before attempting to
-        claim a block.
-        """
-        if self._target_wait_time is None:
-            self._target_wait_time = \
-                self._get_config_setting(
-                    name='chronoshift.target_wait_time',
-                    value_type=float,
-                    default_value=ChronoShiftStakeView._TARGET_WAIT_TIME_,
-                    validate_function=lambda value:
-                        math.isfinite(value) and value > 0)
-
-        return self._target_wait_time
-
-    @property
-    def ztest_maximum_win_deviation(self):
-        """Return the zTest maximum win deviation if config setting exists and
-        is valid, otherwise return the default.
-
-        The zTest maximum win deviation specifies the maximum allowed
-        deviation from the expected win frequency for a particular validator
-        before the zTest will fail and the claimed block will be rejected.
-        The deviation corresponds to a confidence interval (i.e., how
-        confident we are that we have truly detected a validator winning at
-        a frequency we consider too frequent):
-
-        3.075 ==> 99.9%
-        2.575 ==> 99.5%
-        2.321 ==> 99%
-        1.645 ==> 95%
-        """
-        if self._ztest_maximum_win_deviation is None:
-            self._ztest_maximum_win_deviation = \
-                self._get_config_setting(
-                    name='chronoshift.ztest_maximum_win_deviation',
-                    value_type=float,
-                    default_value=ChronoShiftStakeView.
-                    _ZTEST_MAXIMUM_WIN_DEVIATION_,
-                    validate_function=lambda value:
-                        math.isfinite(value) and value > 0)
-
-        return self._ztest_maximum_win_deviation
-
-    @property
-    def ztest_minimum_win_count(self):
-        """Return the zTest minimum win count if config setting exists and is
-        valid, otherwise return the default.
-
-        The zTest minimum win count is the number of blocks a validator
-        must have successfully claimed (once there are at least
-        population_estimate_sample_size PoET blocks in the blockchain) before
-        the zTest will be applied to the validator's attempt to claim further
-        blocks.
-        """
-        if self._ztest_minimum_win_count is None:
-            self._ztest_minimum_win_count = \
-                self._get_config_setting(
-                    name='chronoshift.ztest_minimum_win_count',
-                    value_type=int,
-                    default_value=ChronoShiftStakeView._ZTEST_MINIMUM_WIN_COUNT_,
-                    validate_function=lambda value: value >= 0)
-        return self._ztest_minimum_win_count
-
-    @property
-    def minimum_stake_amt(self):
-        """Return the minimum stake if config setting exists and is
-        valid, otherwise return the default.
-
-        The zTest minimum win count is the number of blocks a validator
-        must have successfully claimed (once there are at least
-        population_estimate_sample_size PoET blocks in the blockchain) before
-        the zTest will be applied to the validator's attempt to claim further
-        blocks.
-        """
-        if self._minimum_stake_amt is None:
-            self._minimum_stake_amt = \
-                self._get_config_setting(
-                    name='chronoshift.minimum_stake_amt',
-                    value_type=int,
-                    default_value=ChronoShiftStakeView._MINIMUM_STAKE_AMT,
-                    validate_function=lambda value: value >= 0)
-        return self._stake_amt
 
     def _get_stake(self, key):
         """Get the stake stored at the given key. I
@@ -379,10 +73,9 @@ class ChronoShiftStakeView(object):
             float: The value of stake stored at a specific state address and
             public_key
         """
-        #address=stake_address(key)
         try:
             state_entry = self._state_view.get(
-                ChronoShiftStakeView.stake_address(key))
+                StakeView.stake_address(key))
         except KeyError:
             raise Exception('State miss error, nothing there. Raise exception')
 
@@ -400,7 +93,7 @@ class ChronoShiftStakeView(object):
                 raise Exception('This sign_up information doesnt own any stake here')
             # ensure the signer is allowed to do this.
             if _check_allowed_signer(sender_stake.ownerPubKey, key):
-                return sender_stake.value, sender_stake.block_Number
+                return sender_stake
         # return the value stored there.
         return None
 
@@ -415,6 +108,7 @@ class ChronoShiftStakeView(object):
         """
         addr_part = _to_hash(key)[:_ADDRESS_PART_SIZE]
         return STAKE_NAMESPACE + _DEFAULT_TYPE_PREFIX + addr_part
+
 
 class StakeViewFactory(object):
     """Creates StakeView instances.
@@ -434,5 +128,5 @@ class StakeViewFactory(object):
         Returns:
             StakeView: the configuration view at the given state root.
         """
-        return ChronoShiftStakeView(
+        return StakeView(
             self._state_view_factory.create_view(state_root_hash))

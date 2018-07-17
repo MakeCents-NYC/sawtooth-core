@@ -57,7 +57,7 @@ class StakeView(object):
             state_view (:obj:`StateView`): a state view
         """
         self._state_view = state_view
-        self._settings_view = SettingsView(state_view)
+        # self._settings_view = SettingsView(state_view)
 
         # The public method for get_stake should have its results memoized
         # via an lru_cache.  Typical use of the decorator results in the
@@ -93,7 +93,7 @@ class StakeView(object):
                 raise Exception('This sign_up information doesnt own any stake here')
             # ensure the signer is allowed to do this.
             if _check_allowed_signer(sender_stake.ownerPubKey, key):
-                return sender_stake.value
+                return sender_stake
         # return the value stored there.
         return None
 

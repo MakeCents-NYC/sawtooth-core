@@ -77,7 +77,7 @@ class TestWaitTimer(TestCase):
                 validator_address='1060 W Addison Street',
                 previous_certificate_id=NULL_BLOCK_IDENTIFIER,
                 consensus_state=self.consensus_state,
-                chronoshift_stake_view=self.mock_poet_settings_view)
+                chronoshift_settings_view=self.mock_poet_settings_view)
 
     def test_create(self):
         # Need to create signup information first
@@ -112,7 +112,7 @@ class TestWaitTimer(TestCase):
             validator_address='1060 W Addison Street',
             previous_certificate_id=NULL_BLOCK_IDENTIFIER,
             consensus_state=self.consensus_state,
-            chronoshift_stake_view=self.mock_poet_settings_view)
+            chronoshift_settings_view=self.mock_poet_settings_view)
 
         self.assertIsNotNone(wt)
         self.assertEqual(
@@ -141,7 +141,7 @@ class TestWaitTimer(TestCase):
             validator_address='1060 W Addison Street',
             previous_certificate_id=NULL_BLOCK_IDENTIFIER,
             consensus_state=self.consensus_state,
-            chronoshift_stake_view=self.mock_poet_settings_view)
+            chronoshift_settings_view=self.mock_poet_settings_view)
 
         self.assertIsNotNone(wt)
         self.assertEqual(
@@ -184,7 +184,7 @@ class TestWaitTimer(TestCase):
             validator_address='1060 W Addison Street',
             previous_certificate_id=NULL_BLOCK_IDENTIFIER,
             consensus_state=self.consensus_state,
-            chronoshift_stake_view=self.mock_poet_settings_view)
+            chronoshift_settings_view=self.mock_poet_settings_view)
         self.assertFalse(wt.has_expired(wt.request_time - 1))
 
         # Create a timer and when it has expired, verify that the duration is
@@ -195,7 +195,7 @@ class TestWaitTimer(TestCase):
             validator_address='1060 W Addison Street',
             previous_certificate_id=NULL_BLOCK_IDENTIFIER,
             consensus_state=self.consensus_state,
-            chronoshift_stake_view=self.mock_poet_settings_view)
+            chronoshift_settings_view=self.mock_poet_settings_view)
 
         self.assertTrue(wt.has_expired(wt.request_time + wt.duration + 1.0))
 
@@ -206,7 +206,7 @@ class TestWaitTimer(TestCase):
             validator_address='1060 W Addison Street',
             previous_certificate_id=NULL_BLOCK_IDENTIFIER,
             consensus_state=self.consensus_state,
-            chronoshift_stake_view=self.mock_poet_settings_view)
+            chronoshift_settings_view=self.mock_poet_settings_view)
 
         assigned_duration = wt.duration
         wt.duration = 0
@@ -222,7 +222,7 @@ class TestWaitTimer(TestCase):
             validator_address='1060 W Addison Street',
             previous_certificate_id=NULL_BLOCK_IDENTIFIER,
             consensus_state=self.consensus_state,
-            chronoshift_stake_view=self.mock_poet_settings_view)
+            chronoshift_settings_view=self.mock_poet_settings_view)
         assigned_request_time = wt.request_time
         wt.request_time -= wt.duration
 

@@ -150,7 +150,7 @@ class TestConsensusStateStore(unittest.TestCase):
         state.validator_did_claim_block(
             validator_info=validator_info,
             wait_certificate=wait_certificate,
-            chronoshift_stake_view=mock_chronoshift_settings_view)
+            chronoshift_settings_view=mock_chronoshift_settings_view)
         store['key'] = state
 
         # Verify the length and contains key

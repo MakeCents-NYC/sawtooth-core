@@ -15,10 +15,36 @@
 
 import math
 import logging
+import hashlib
+from functools import lru_cache
 
 from sawtooth_validator.state.settings_view import SettingsView
 
+
+from stake.protobuf.stake_pb2 import StakeList
+from stake.protobuf.stake_pb2 import Stake
+from stake.protobuf.stake_payload_pb2 import StakePayload
+
+
+# The identity namespace is special: it is not derived from a hash.
+STAKE_NAMESPACE = '807062'
+_DEFAULT_TYPE_PREFIX = '00'
+_ADDRESS_PART_SIZE = 62
+
+
+
 LOGGER = logging.getLogger(__name__)
+
+def _to_hash(value):
+    return hashlib.sha256(value.encode()).hexdigest()
+
+
+def _check_allowed_signer(signing_key, stake_owner):
+    if signing_key == stake_owner:
+        # TODO: maybe we should assert here?
+        return
+    raise Exception(
+        "This is not the owner of the stake")
 
 
 class ChronoShiftSettingsView(object):
@@ -40,6 +66,7 @@ class ChronoShiftSettingsView(object):
     _TARGET_WAIT_TIME_ = 20.0
     _ZTEST_MAXIMUM_WIN_DEVIATION_ = 3.075
     _ZTEST_MINIMUM_WIN_COUNT_ = 3
+    _MINIMUM_STAKE_AMT =5.0
 
     def __init__(self, state_view):
         """Initialize a ChronoshiftSettingsView object.
@@ -50,9 +77,8 @@ class ChronoShiftSettingsView(object):
         Returns:
             None
         """
-
+        self._state_view = state_view
         self._settings_view = SettingsView(state_view)
-
         self._block_claim_delay = None
         self._enclave_module_name = None
         self._initial_wait_time = None
@@ -63,7 +89,8 @@ class ChronoShiftSettingsView(object):
         self._target_wait_time = None
         self._ztest_maximum_win_deviation = None
         self._ztest_minimum_win_count = None
-
+        self._stake_amt = None
+        # self.get_stake = lru_cache(maxsize=128)(self._get_stake)
 
     def _get_config_setting(self,
                             name,
@@ -323,3 +350,89 @@ class ChronoShiftSettingsView(object):
                     default_value=ChronoShiftSettingsView._ZTEST_MINIMUM_WIN_COUNT_,
                     validate_function=lambda value: value >= 0)
         return self._ztest_minimum_win_count
+
+    @property
+    def minimum_stake_amt(self):
+        """Return the minimum stake if config setting exists and is
+        valid, otherwise return the default.
+
+        The zTest minimum win count is the number of blocks a validator
+        must have successfully claimed (once there are at least
+        population_estimate_sample_size PoET blocks in the blockchain) before
+        the zTest will be applied to the validator's attempt to claim further
+        blocks.
+        """
+        if self._minimum_stake_amt is None:
+            self._minimum_stake_amt = \
+                self._get_config_setting(
+                    name='chronoshift.minimum_stake_amt',
+                    value_type=int,
+                    default_value=ChronoShiftSettingsView._MINIMUM_STAKE_AMT,
+                    validate_function=lambda value: value >= 0)
+        return self._stake_amt
+
+    # def _get_stake(self, key):
+    #     """Get the stake stored at the given key. I
+    #     Args:
+    #         key (str): the stake key
+    #     Returns:
+    #         float: The value of stake stored at a specific state address and
+    #         public_key
+    #     """
+    #     #address=stake_address(key)
+    #     try:
+    #         state_entry = self._state_view.get(
+    #             ChronoShiftStakeView.stake_address(key))
+    #     except KeyError:
+    #         raise Exception('State miss error, nothing there. Raise exception')
+    #
+    #     if state_entry is not None:
+    #         # parse the state entry (it should be a stake_list)
+    #         sender_stake_list = StakeList()
+    #         try:
+    #             # There should only be one value there, the array position in because
+    #             # the journal returns an array.
+    #             sender_stake_list.ParseFromString(state_entry[0].data)
+    #         except Exception():
+    #             raise Exception('TODO: make a Protobuf Decode Error')
+    #         sender_stake = sender_stake_list.stakeMap.get_or_create(key)
+    #         if not sender_stake_list.stakeMap[key]:
+    #             raise Exception('This sign_up information doesnt own any stake here')
+    #         # ensure the signer is allowed to do this.
+    #         if _check_allowed_signer(sender_stake.ownerPubKey, key):
+    #             return sender_stake.value, sender_stake.block_Number
+    #     # return the value stored there.
+    #     return None
+
+    # @staticmethod
+    # @lru_cache(maxsize=128)
+    # def stake_address(key):
+    #     """Computes the radix address for the given stake key.
+    #     Args:
+    #         key (str): the stake key
+    #     Returns:
+    #         str: the computed address
+    #     """
+    #     addr_part = _to_hash(key)[:_ADDRESS_PART_SIZE]
+    #     return STAKE_NAMESPACE + _DEFAULT_TYPE_PREFIX + addr_part
+
+# class StakeViewFactory(object):
+#     """Creates StakeView instances.
+#     """
+#
+#     def __init__(self, state_view_factory):
+#         """Creates this view factory with a given state view factory.
+#
+#         Args:
+#             state_view_factory (:obj:`StateViewFactory`): the state view
+#                 factory
+#         """
+#         self._state_view_factory = state_view_factory
+#
+#     def create_stake_view(self, state_root_hash):
+#         """
+#         Returns:
+#             StakeView: the configuration view at the given state root.
+#         """
+#         return ChronoShiftStakeView(
+#             self._state_view_factory.create_view(state_root_hash))

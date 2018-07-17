@@ -44,7 +44,7 @@ from chronoshift.protobuf.chronoshift_registry_pb2 \
 
 @mock.patch('chronoshift_cs.chronoshift_consensus.chronoshift_block_publisher.BlockWrapper')
 @mock.patch('chronoshift_cs.chronoshift_consensus.chronoshift_block_publisher.'
-            'ChronoShiftStakeView')
+            'ChronoShiftSettingsView')
 
 class TestChronoShiftBlockPublisher(TestCase):
 
