@@ -16,9 +16,9 @@ import hashlib
 
 
 VALIDATOR_REGISTRY_NAMESPACE = \
-    hashlib.sha256('validator_registry'.encode()).hexdigest()[0:6]
+    hashlib.sha256('stake'.encode()).hexdigest()[0:6]
 
 
 def to_address(addressable_key):
-    return VALIDATOR_REGISTRY_NAMESPACE + hashlib.sha256(
-        addressable_key.encode()).hexdigest()
+    return VALIDATOR_REGISTRY_NAMESPACE + '00' + hashlib.sha256(
+        addressable_key.encode()).hexdigest()[:62]
