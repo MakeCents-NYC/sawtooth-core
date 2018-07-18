@@ -915,19 +915,14 @@ class TestConsensusState(TestCase):
                     block_number=99,
                     chronoshift_settings_view=mock_chronoshift_settings_view,
                     chronoshift_stake_view=mock_chronoshift_stake_view))
-        # state.validator_is_using_invalid_stake(
-        #         validator_info=validator_info,
-        #         block_number=mock_block.header.block_number,
-        #         chronoshift_settings_view=mock_chronoshift_settings_view,
-        #         mock_chronoshift_stake_view=mock_chronoshift_stake_view)
+        state.validator_is_using_invalid_stake(
+                validator_info=validator_info,
+                block_number=99,
+                chronoshift_settings_view=mock_chronoshift_settings_view,
+                chronoshift_stake_view=mock_chronoshift_stake_view)
 
         # Now that validator has claimed limit for key, verify that it triggers
         # the test
-        # self.assertTrue(
-        #     state.validator_stakeamt_is_low(
-        #         validator_info=validator_info,
-        #         block_Number=mock_block.header.block_number,
-        #         chronoshift_settings_view=mock_chronoshift_settings_view))
 
         # # Switch keys and verify that validator again doesn't trigger test
         # validator_info = \

@@ -151,6 +151,7 @@ COPY --from=sawtooth-validator-builder /project/python3-sawtooth-validator*.deb 
 COPY . /project
 
 RUN dpkg -i /tmp/python3-sawtooth*.deb || true \
+ && apt-get update \
  && apt-get -f -y install \
  && /project/bin/protogen \
  && cd /project/consensus/poet/simulator \

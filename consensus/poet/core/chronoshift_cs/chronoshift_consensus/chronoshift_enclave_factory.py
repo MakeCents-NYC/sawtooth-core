@@ -18,6 +18,7 @@ import importlib
 import logging
 
 from chronoshift_cs.chronoshift_consensus.chronoshift_settings_view import ChronoShiftSettingsView
+from chronoshift_cs.chronoshift_consensus.chronoshift_stake_view import StakeView
 LOGGER = logging.getLogger(__name__)
 
 
@@ -57,7 +58,7 @@ class ChronoShiftEnclaveFactory(object):
             # loaded enclave module.
             if cls._chronoshift_enclave_module is None:
                 # Get the configured PoET enclave module name.
-                chronoshift_stake_view=ChronoShiftStakeView(state_view)
+                chronoshift_stake_view = StakeView(state_view)
                 module_name = chronoshift_stake_view.enclave_module_name
 
                 LOGGER.info(

@@ -1,0 +1,3 @@
+/project/sawtooth-core/sdk/examples/xo_cxx/build/CMakeFiles/edit_cache.dir
+/project/sawtooth-core/sdk/examples/xo_cxx/build/CMakeFiles/rebuild_cache.dir
+/project/sawtooth-core/sdk/examples/xo_cxx/build/CMakeFiles/xo_tp_cxx.dir

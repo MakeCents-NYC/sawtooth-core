@@ -35,6 +35,6 @@ class MockConsensusState(object):
             claiming_too_early
         new_mock.validator_is_claiming_too_frequently.return_value = \
             claiming_too_frequently
-        new_mock.validator_stakeamt_is_low.return_value = \
+        new_mock.validator_is_using_invalid_stake.return_value = \
             stakeamt_low
         return new_mock

@@ -22,12 +22,14 @@ RUN echo "deb http://repo.sawtooth.me/ubuntu/ci xenial universe" >> /etc/apt/sou
  && apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys 8AA7AF1F1091A5FD \
  && apt-get update
 
-RUN apt-get install -y -q --allow-downgrades \
+RUN apt-get update \
+    apt-get install -y -q --allow-downgrades \
     git \
     python3 \
     python3-stdeb
 
-RUN apt-get install -y -q --allow-downgrades \
+RUN apt-get update \
+    apt-get install -y -q --allow-downgrades \
     python3-grpcio \
     python3-grpcio-tools \
     python3-protobuf

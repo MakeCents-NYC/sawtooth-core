@@ -562,7 +562,8 @@ class TestPoetBlockVerifier(TestCase):
                 name='validator_001',
                 id='validator_deadbeef',
                 signup_info=CSignUpInfo(
-                    poet_public_key='00112233445566778899aabbccddeeff'))
+                    poet_public_key='00112233445566778899aabbccddeeff',
+                    stake_address='validator_deadbeef'))
 
         # create a mock_wait_certificate that does nothing in check_valid
         mock_wait_certificate = mock.Mock()

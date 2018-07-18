@@ -82,6 +82,7 @@ class SignupInfo(object):
         enclave_signup_info = \
             chronoshift_enclave_module.create_signup_info(
                 originator_public_key_hash,
+
                 nonce[-cls.__MAXIMUM_NONCE_LENGTH__:])
         signup_info = cls(enclave_signup_info)
 
@@ -150,7 +151,7 @@ class SignupInfo(object):
     def __init__(self, enclave_signup_info):
         self.poet_public_key = enclave_signup_info.poet_public_key
         self.proof_data = enclave_signup_info.proof_data
-        self.stake_address=enclave_signup_info.stake_address
+        self.stake_address = enclave_signup_info.stake_address
         #self.anti_sybil_id = enclave_signup_info.anti_sybil_id
         self.sealed_signup_data = enclave_signup_info.sealed_signup_data
 

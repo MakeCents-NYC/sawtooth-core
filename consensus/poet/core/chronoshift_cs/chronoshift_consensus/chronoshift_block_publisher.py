@@ -54,7 +54,7 @@ from chronoshift_cs.chronoshift_consensus.wait_certificate import WaitCertificat
 from chronoshift_cs.chronoshift_consensus import utils
 
 from chronoshift_cs.chronoshift_consensus.chronoshift_settings_view import ChronoShiftSettingsView
-#from chronoshift_cs.chronoshift_consensus.stake_view import StakeView
+from chronoshift_cs.chronoshift_consensus.chronoshift_stake_view import StakeView
 #import sawtooth_poet_common.protobuf.validator_registry_pb2 as vr_pb
 
 
@@ -251,6 +251,7 @@ class ChronoShiftBlockPublisher(BlockPublisherInterface):
                 consensus_state_store=self._consensus_state_store,
                 chronoshift_enclave_module=chronoshift_enclave_module)
         chronoshift_settings_view = ChronoShiftSettingsView(state_view)
+        #stake_view=StakeView(state_view)
 
         if consensus_state.signup_attempt_timed_out(
                 signup_nonce, chronoshift_settings_view, self._block_cache):
@@ -451,6 +452,7 @@ class ChronoShiftBlockPublisher(BlockPublisherInterface):
                 consensus_state_store=self._consensus_state_store,
                 chronoshift_enclave_module=chronoshift_enclave_module)
         chronoshift_settings_view = ChronoShiftSettingsView(state_view)
+        stake_view=StakeView(state_view)
 
         # If our signup information does not pass the freshness test, then we
         # know that other validators will reject any blocks we try to claim so
@@ -467,6 +469,7 @@ class ChronoShiftBlockPublisher(BlockPublisherInterface):
                 block_header=block_header,
                 chronoshift_enclave_module=chronoshift_enclave_module)
             return False
+
 
         # Using the consensus state for the block upon which we want to
         # build, check to see how many blocks we have claimed on this chain
@@ -519,11 +522,8 @@ class ChronoShiftBlockPublisher(BlockPublisherInterface):
                 block_header.previous_block_id[:8])
             return False
 
-        if consensus_state.validator_stakeamt_is_low(
-                validator_info=validator_info,
-                block_number=block_header.block_num,
-                chronoshift_settings_view=chronoshift_settings_view(state_view)):
-            return False
+
+
 
         # Verify that we are abiding by the block claim delay (i.e., waiting a
         # certain number of blocks since our validator registry was added/
@@ -540,6 +540,8 @@ class ChronoShiftBlockPublisher(BlockPublisherInterface):
                 'enough since registering validator information.',
                 block_header.previous_block_id[:8])
             return False
+
+
 
         # We need to create a wait timer for the block...this is what we
         # will check when we are asked if it is time to publish the block
@@ -572,7 +574,7 @@ class ChronoShiftBlockPublisher(BlockPublisherInterface):
                 previous_block_id=block_header.previous_block_id,
                 chronoshift_settings_view=chronoshift_settings_view,
                 population_estimate=wait_timer.population_estimate(
-                    chronoshift_settings_view=chronoshift_settings_view),
+                chronoshift_settings_view=chronoshift_settings_view),
                 block_cache=self._block_cache,
                 chronoshift_enclave_module=chronoshift_enclave_module):
             LOGGER.info(
@@ -582,6 +584,15 @@ class ChronoShiftBlockPublisher(BlockPublisherInterface):
                 block_header.previous_block_id[:8],
                 block_header.signer_public_key)
             return False
+        if consensus_state.validator_is_using_invalid_stake(
+                    validator_info=validator_info,
+                    block_number=block_header.block_num,
+                    choronoshift_settings_view=chronoshift_settings_view,
+                    chronoshift_stake_view=stake_view):
+            LOGGER.info(
+                'Reject building block: Validator is using invalid_stake')
+            return False
+
 
         # At this point, we know that if we are able to claim the block we are
         # initializing, we will not be prevented from doing so because of PoET

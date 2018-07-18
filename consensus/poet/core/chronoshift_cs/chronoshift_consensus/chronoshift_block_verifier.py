@@ -38,6 +38,8 @@ from chronoshift.chronoshift_registry_view.chronoshift_registry_view \
 from chronoshift_cs.chronoshift_consensus.chronoshift_settings_view \
     import ChronoShiftSettingsView
 
+from chronoshift_cs.chronoshift_consensus.chronoshift_stake_view \
+    import StakeView
 
 
 
@@ -171,6 +173,7 @@ class ChronoShiftBlockVerifier(BlockVerifierInterface):
                 consensus_state_store=self._consensus_state_store,
                 chronoshift_enclave_module=chronoshift_enclave_module)
         chronoshift_settings_view = ChronoShiftSettingsView(state_view=state_view)
+        chronoshift_stake_view=StakeView(state_view=state_view)
 
         previous_certificate_id = \
             utils.get_previous_certificate_id(
@@ -246,24 +249,13 @@ class ChronoShiftBlockVerifier(BlockVerifierInterface):
                 'frequently.',
                 block_wrapper.identifier[:8])
             return False
-
-        if consensus_state.validator_stakeamt_is_low(
+        if consensus_state.validator_is_using_invalid_stake(
                 validator_info=validator_info,
-                block_number=block_wrapper.header.block_num,
-                chronoshift_settings_view=chronoshift_settings_view(state_view)):
+                block_number=block_wrapper.block_num,
+                chronoshift_settings_view=chronoshift_settings_view,
+                chronoshift_stake_view=chronoshift_stake_view):
+            LOGGER.error(
+                'Block %s rejected: Validator is using invalid stake ',
+                block_wrapper.identifier[:8])
             return False
-
-        #Reject the block if the sign up information associated with the stake address
-        #does not control of minimum amount of stake
-        # if ~ consensus_state.validator_signup_control_stake(
-        #         validator_info=validator_info):
-        #     return False
-        #
-        # # Reject the block if the stake is not locked
-        # if ~ consensus_state.validator_signup_locked_stake(
-        #         validator_info=validator_info,
-        #         chronoshift_enclave_module=chronoshift_enclave_module):
-        #     return False
-
-
         return True

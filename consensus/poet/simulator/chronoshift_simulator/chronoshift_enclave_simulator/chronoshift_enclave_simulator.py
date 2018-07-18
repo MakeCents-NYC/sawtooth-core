@@ -125,7 +125,8 @@ class _ChronoShiftEnclaveSimulator(object):
 
     # The anti-sybil ID for this particular validator.  This will get set when
     # the enclave is initialized
-    _anti_sybil_id = None
+    #_anti_sybil_id = None
+    stake_address = None
 
     MINIMUM_WAIT_TIME = 1.0
 
@@ -168,7 +169,7 @@ class _ChronoShiftEnclaveSimulator(object):
 
         # # Create an anti-Sybil ID that is unique for this validator
         # cls._anti_sybil_id = hashlib.sha256(validator_id.encode()).hexdigest()
-        cls._stake_address = 'stake_address'
+        cls.stake_address = 'Stake'
 
 
 
@@ -243,7 +244,7 @@ class _ChronoShiftEnclaveSimulator(object):
 
             # Fake our "proof" data.
             verification_report = {
-                'epidPseudonym': cls._anti_sybil_id,
+                'epidPseudonym': cls.stake_address,
                 'id': base64.b64encode(
                     hashlib.sha256(
                         timestamp.encode()).hexdigest().encode()).decode(),
@@ -280,7 +281,7 @@ class _ChronoShiftEnclaveSimulator(object):
                     poet_public_key=signup_data['poet_public_key'],
                     proof_data=proof_data,
                     #anti_sybil_id=cls._anti_sybil_id,
-                    stake_address=cls._stake_address,
+                    stake_address=cls.stake_address,
                     sealed_signup_data=sealed_signup_data)
 
     @classmethod

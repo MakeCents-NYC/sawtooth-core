@@ -34,6 +34,7 @@ class EnclaveSignupInfo(object):
             the validity of the signup information.
         anti_sybil_id (str): A string corresponding to the anti-Sybil ID for
             the enclave that generated the signup information.
+        stake_address: stake address of the enclave
         sealed_signup_data (str): A base 64 string representing data that can
             be persisted and presented at a later time to restore the PoET
             enclave.
@@ -64,8 +65,6 @@ class EnclaveSignupInfo(object):
                     'proof_data'),
                 stake_address=deserialized_signup_info.get(
                     'stake_address'),
-                # anti_sybil_id=deserialized_signup_info.get(
-                #     'anti_sybil_id'),
                 serialized_signup_info=serialized_signup_info)
 
         return signup_info
@@ -74,13 +73,11 @@ class EnclaveSignupInfo(object):
                  poet_public_key,
                  proof_data,
                  stake_address,
-                 # anti_sybil_id,
                  sealed_signup_data=None,
                  serialized_signup_info=None):
         self.poet_public_key = poet_public_key
         self.proof_data = proof_data
-        self.stake_address=stake_address,
-        # self.anti_sybil_id = anti_sybil_id
+        self.stake_address = stake_address
         self.sealed_signup_data = sealed_signup_data
         self._serialized = serialized_signup_info
 
@@ -102,8 +99,7 @@ class EnclaveSignupInfo(object):
             signup_info_dict = {
                 'poet_public_key': self.poet_public_key,
                 'proof_data': self.proof_data,
-                'stake_address':self.stake_address,
-                # 'anti_sybil_id': self.anti_sybil_id
+                'stake_address': self.stake_address
             }
 
             self._serialized = dict2json(signup_info_dict)

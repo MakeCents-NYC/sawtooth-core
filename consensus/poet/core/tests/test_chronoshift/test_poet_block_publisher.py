@@ -774,7 +774,8 @@ class TestChronoShiftBlockPublisher(TestCase):
                 name='validator_001',
                 id='validator_deadbeef',
                 signup_info=CSignUpInfo(
-                    poet_public_key='00112233445566778899aabbccddeeff'))
+                    poet_public_key='00112233445566778899aabbccddeeff',
+                    stake_address='validator_deadbeef'))
 
         # create a mock_consensus_state that returns a mock with
         # the following settings:
@@ -885,7 +886,8 @@ class TestChronoShiftBlockPublisher(TestCase):
                 name='validator_001',
                 id='validator_deadbeef',
                 signup_info=CSignUpInfo(
-                    poet_public_key='00112233445566778899aabbccddeeff'))
+                    poet_public_key='00112233445566778899aabbccddeeff',
+                    stake_address='validator_deadbeef'))
 
         # create a mock_consensus_state that returns a mock with
         # the following settings:

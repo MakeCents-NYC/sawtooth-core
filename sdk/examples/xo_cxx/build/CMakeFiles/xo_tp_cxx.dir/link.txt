@@ -1,0 +1,1 @@
+/usr/bin/c++   -std=c++11   CMakeFiles/xo_tp_cxx.dir/xo_transaction_processor.cpp.o CMakeFiles/xo_tp_cxx.dir/address_mapper.cpp.o  -o bin/xo_tp_cxx  -L/project/sawtooth-core/sdk/examples/xo_cxx/build/../../../cxx/build/lib -lsawtooth -lproto -lprotobuf -lzmq -lzmqpp -llog4cxx -lcryptopp -lpthread -Wl,-rpath,/project/sawtooth-core/sdk/examples/xo_cxx/build/../../../cxx/build/lib 
