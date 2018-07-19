@@ -34,6 +34,11 @@ pkgs="
     consensus/poet/core
     consensus/poet/families
     consensus/poet/simulator
+    consensus/chronoshift/cli
+    consensus/chronoshift/common
+    consensus/chronoshift/core
+    consensus/chronoshift/families
+    consensus/chronoshift/simulator
 "
 
 for pkg in $pkgs

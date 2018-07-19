@@ -1,4 +1,3 @@
-#!/bin/bash
 # Copyright 2017 Intel Corporation
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -14,9 +13,22 @@
 # limitations under the License.
 # ------------------------------------------------------------------------------
 
-settings=""
-settings="$settings sawtooth.poet.target_wait_time=5"
-settings="$settings sawtooth.poet.initial_wait_time=25"
-settings="$settings sawtooth.publisher.max_batches_per_block=100"
-settings="$settings chronoshift.minimum_stake_amt=5.0"
-echo "$settings"
+from __future__ import print_function
+
+import subprocess
+
+from setuptools import setup, find_packages
+
+setup(
+    name='sawtooth-poet-common',
+    version=subprocess.check_output(
+        ['../../../bin/get_version']).decode('utf-8').strip(),
+    description='Sawtooth PoET Common Modules',
+    author='Hyperledger Sawtooth',
+    url='https://github.com/hyperledger/sawtooth-core',
+    packages=find_packages(),
+    install_requires=[
+        'protobuf',
+        'sawtooth-sdk',
+    ],
+    entry_points={})

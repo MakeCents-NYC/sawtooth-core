@@ -1,4 +1,3 @@
-#!/bin/bash
 # Copyright 2017 Intel Corporation
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -14,9 +13,14 @@
 # limitations under the License.
 # ------------------------------------------------------------------------------
 
-settings=""
-settings="$settings sawtooth.poet.target_wait_time=5"
-settings="$settings sawtooth.poet.initial_wait_time=25"
-settings="$settings sawtooth.publisher.max_batches_per_block=100"
-settings="$settings chronoshift.minimum_stake_amt=5.0"
-echo "$settings"
+from sawtooth_poet_common.sgx_structs._sgx_attributes import SgxAttributes
+from sawtooth_poet_common.sgx_structs._sgx_basename import SgxBasename
+from sawtooth_poet_common.sgx_structs._sgx_cpu_svn import SgxCpuSvn
+from sawtooth_poet_common.sgx_structs._sgx_key_id import SgxKeyId
+from sawtooth_poet_common.sgx_structs._sgx_measurement import SgxMeasurement
+from sawtooth_poet_common.sgx_structs._sgx_quote import SgxQuote
+from sawtooth_poet_common.sgx_structs._sgx_report import SgxReport
+from sawtooth_poet_common.sgx_structs._sgx_report_body import SgxReportBody
+from sawtooth_poet_common.sgx_structs._sgx_report_data import SgxReportData
+
+__all__ = []

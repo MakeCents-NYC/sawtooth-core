@@ -29,6 +29,8 @@ MODULE_LIST="
     python_sdk
     rust_sdk
     integration
+    chronoshift
+
 "
 
 usage() {
@@ -151,6 +153,29 @@ main() {
                 poet_families)
                     test_poet_families
                     ;;
+                chronoshift)
+                    test_chronoshift_cli
+                    test_chronoshift_common
+                    test_chronoshift_core
+                    test_chronoshift_simulator
+                    test_chronoshift_families
+                    test_ias
+                    ;;
+                chronoshift_cli)
+                    test_chronoshift_cli
+                    ;;
+                chronoshift_common)
+                    test_chronoshift_common
+                    ;;
+                chronoshift_core)
+                    test_chronoshift_core
+                    ;;
+                chronoshift_simulator)
+                    test_chronoshift_simulator
+                    ;;
+                chronoshift_families)
+                    test_chronoshift_families
+                    ;;
                 ias)
                     test_ias
                     ;;
@@ -237,6 +262,33 @@ test_poet_families() {
     run_docker_test ./consensus/poet/families/tests/test_tp_validator_registry.yaml
     copy_coverage .coverage.poet_families
 }
+
+
+test_chronoshift_cli() {
+    run_docker_test ./consensus/chronoshift/cli/tests/unit_chronoshift_cli.yaml
+    copy_coverage .coverage.chronoshift_cli
+}
+
+test_chronoshift_common() {
+    run_docker_test ./consensus/chronoshift/common/tests/unit_chronoshift_common.yaml
+    copy_coverage .coverage.chronoshift_common
+}
+
+test_chronoshift_core() {
+    run_docker_test ./consensus/chronoshift/core/tests/unit_chronoshift_core.yaml
+    copy_coverage .coverage.chronoshift_core
+}
+
+test_chronoshift_simulator() {
+    run_docker_test ./consensus/chronoshift/simulator/tests/unit_chronoshift_simulator.yaml
+    copy_coverage .coverage.chronoshift_simulator
+}
+
+test_chronoshift_families() {
+    run_docker_test ./consensus/chronoshift/families/tests/test_tp_validator_registry.yaml
+    copy_coverage .coverage.chronoshift_families
+}
+
 
 test_ias() {
     run_docker_test ./utility/ias_client/tests/unit_ias_client.yaml

@@ -87,6 +87,13 @@ def main(args=None):
     proto_dir = JOIN(TOP_DIR, "consensus/poet/families/stake_tp/protos")
     protoc(proto_dir, "consensus/poet/common", "stake/protobuf")
 
+    #  Generate Chronoshift protos
+    proto_dir = JOIN(TOP_DIR, "consensus/chronoshift/families/chronoshift_validator_registry/protos")
+    protoc(proto_dir, "consensus/chronoshift/common", "chronoshift/protobuf")
+
+    #  Generate Chronoshift protos
+    proto_dir = JOIN(TOP_DIR, "consensus/chronoshift/families/stake_tp/protos")
+    protoc(proto_dir, "consensus/chronoshift/common", "stake/protobuf")
 
     # 8. Generate smallbank protos
     if "go" in args:
