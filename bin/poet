@@ -25,16 +25,16 @@ build_str = "lib.{}-{}.{}".format(
 
 sys.path.insert(0, os.path.join(
     os.path.dirname(os.path.dirname(os.path.realpath(__file__))),
-    'consensus', 'poet', 'cli'))
+    'consensus', 'chronoshift', 'cli'))
 sys.path.insert(0, os.path.join(
     os.path.dirname(os.path.dirname(os.path.realpath(__file__))),
-    'consensus', 'poet', 'common'))
+    'consensus', 'chronoshift', 'common'))
 sys.path.insert(0, os.path.join(
     os.path.dirname(os.path.dirname(os.path.realpath(__file__))),
-    'consensus', 'poet', 'core'))
+    'consensus', 'chornoshift', 'core'))
 sys.path.insert(0, os.path.join(
     os.path.dirname(os.path.dirname(os.path.realpath(__file__))),
-    'consensus', 'poet', 'simulator'))
+    'consensus', 'chronoshift', 'simulator'))
 sys.path.insert(0, os.path.join(
     os.path.dirname(os.path.dirname(os.path.realpath(__file__))),
     'signing'))
@@ -43,9 +43,10 @@ sys.path.insert(0, os.path.join(
     'validator'))
 sys.path.insert(0, os.path.join(
     os.path.dirname(os.path.dirname(os.path.realpath(__file__))),
-    'consensus','poet','families'))
+    'consensus','chronoshift','families'))
 
-from sawtooth_poet_cli.main import main_wrapper
+#from sawtooth_poet_cli.main import main_wrapper
+from chronoshift_cli.main import main_wrapper
 
 if __name__ == '__main__':
     main_wrapper()

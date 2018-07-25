@@ -127,3 +127,43 @@ services:
     image: sawtooth-poet-simulator-local:${ISOLATION_ID}
     volumes:
       - ../../:/project/sawtooth-core
+
+  poet-cli:
+    build:
+      context: ../../
+      dockerfile: ./consensus/poet/cli/Dockerfile
+    image: sawtooth-poet-cli-local:${ISOLATION_ID}
+    volumes:
+      - ../../:/project/sawtooth-core
+
+  chronoshift-common:
+    build:
+      context: ../../
+      dockerfile: ./consensus/chronoshift/common/Dockerfile
+    image: sawtooth-chronoshift-common-local:${ISOLATION_ID}
+    volumes:
+      - ../../:/project/sawtooth-core
+
+  chronoshift-core:
+    build:
+      context: ../../
+      dockerfile: ./consensus/chronoshift/core/Dockerfile
+    image: sawtooth-chronoshift-core-local:${ISOLATION_ID}
+    volumes:
+      - ../../:/project/sawtooth-core
+
+  chronoshift-families:
+    build:
+      context: ../../
+      dockerfile: ./consensus/chronoshift/families/Dockerfile
+    image: sawtooth-chronoshift-families-local:${ISOLATION_ID}
+    volumes:
+      - ../../:/project/sawtooth-core
+
+  chronoshift-simulator:
+    build:
+      context: ../../
+      dockerfile: ./consensus/chronoshift/simulator/Dockerfile
+    image: sawtooth-chronoshift-simulator-local:${ISOLATION_ID}
+    volumes:
+      - ../../:/project/sawtooth-core

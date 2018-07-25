@@ -98,7 +98,7 @@ def add_create_parser(subparsers, parent_parser):
         default=NULL_BLOCK_IDENTIFIER,
         type=str,
         help='specify the most recent block identifier to use as '
-        'a sign-up nonce')
+             'a sign-up nonce')
 
 
 def do_registration(args):
@@ -129,7 +129,7 @@ def do_create(args):
             chronoshift_enclave_module=chronoshift_enclave_module,
             originator_public_key_hash=public_key_hash,
             nonce=nonce)
-            #stake_address=stake_address)
+        #stake_address=stake_address)
 
     print(
         'Writing key state for PoET public key: {}...{}'.format(

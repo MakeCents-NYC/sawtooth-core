@@ -86,7 +86,7 @@ def create_parent_parser(prog_name):
         '-V', '--version',
         action='version',
         version=(DISTRIBUTION_NAME + ' (Hyperledger Sawtooth) version {}')
-        .format(version),
+            .format(version),
         help='display version information')
 
     return parent_parser

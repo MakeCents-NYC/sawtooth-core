@@ -32,7 +32,7 @@ services:
           -o config-genesis.batch && \
         sawset proposal create \
           -k /etc/sawtooth/keys/validator.priv \
-          sawtooth.consensus.algorithm=poet \
+          sawtooth.consensus.algorithm=chronoshift \
           sawtooth.poet.report_public_key_pem=\
           \\\"$$(cat /project/sawtooth-core/consensus/chronoshift/simulator/packaging/simulator_rk_pub.pem)\\\" \
           sawtooth.poet.valid_enclave_measurements=$$(poet enclave measurement) \
@@ -51,9 +51,7 @@ services:
           --peering dynamic \
           --endpoint tcp://validator-0:8800 \
           --scheduler serial \
-          --network-auth trust \
-          --opentsdb-url http://influxdb:8086 \
-          --opentsdb-db metrics
+          --network-auth trust
     \""
     environment:
       PYTHONPATH: "/project/sawtooth-core/consensus/chronoshift/common:\
@@ -80,9 +78,10 @@ services:
             --seeds tcp://validator-0:8800 \
             --scheduler serial \
             --network-auth trust \
-            --opentsdb-url http://influxdb:8086 \
-            --opentsdb-db metrics
-      "
+            "
+#            --opentsdb-url http://influxdb:8086 \
+#            --opentsdb-db metrics
+
     environment:
       PYTHONPATH: "/project/sawtooth-core/consensus/chronoshift/common:\
         /project/sawtooth-core/consensus/chronoshift/simulator:\
@@ -108,9 +107,10 @@ services:
             --seeds tcp://validator-0:8800 \
             --scheduler serial \
             --network-auth trust \
-            --opentsdb-url http://influxdb:8086 \
-            --opentsdb-db metrics
-      "
+            "
+#            --opentsdb-url http://influxdb:8086 \
+#            --opentsdb-db metrics
+#      "
     environment:
       PYTHONPATH: "/project/sawtooth-core/consensus/chronoshift/common:\
         /project/sawtooth-core/consensus/chronoshift/simulator:\
@@ -136,9 +136,10 @@ services:
             --seeds tcp://validator-0:8800 \
             --scheduler serial \
             --network-auth trust \
-            --opentsdb-url http://influxdb:8086 \
-            --opentsdb-db metrics
-      "
+        "
+#            --opentsdb-url http://influxdb:8086/ \
+#            --opentsdb-db metrics
+#      "
     environment:
       PYTHONPATH: "/project/sawtooth-core/consensus/chronoshift/common:\
         /project/sawtooth-core/consensus/chronoshift/simulator:\
@@ -164,9 +165,10 @@ services:
             --seeds tcp://validator-0:8800 \
             --scheduler serial \
             --network-auth trust \
-            --opentsdb-url http://influxdb:8086 \
-            --opentsdb-db metrics
-      "
+            "
+#            --opentsdb-url http://influxdb:8086 \
+#            --opentsdb-db metrics
+#      "
     environment:
       PYTHONPATH: "/project/sawtooth-core/consensus/chronoshift/common:\
         /project/sawtooth-core/consensus/chronoshift/simulator:\
@@ -186,9 +188,10 @@ services:
         sawtooth-rest-api \
           --connect tcp://validator-0:4004 \
           --bind rest-api-0:8008 \
-          --opentsdb-url http://influxdb:8086 \
-          --opentsdb-db metrics
-      "
+          "
+#          --opentsdb-url http://influxdb:8086 \
+#          --opentsdb-db metrics
+#      "
     stop_signal: SIGKILL
 
   rest-api-1:
@@ -204,9 +207,10 @@ services:
         sawtooth-rest-api \
           --connect tcp://validator-1:4004 \
           --bind rest-api-1:8008 \
-          --opentsdb-url http://influxdb:8086 \
-          --opentsdb-db metrics
-      "
+          "
+#          --opentsdb-url http://influxdb:8086 \
+#          --opentsdb-db metrics
+#      "
     stop_signal: SIGKILL
 
   rest-api-2:
@@ -222,9 +226,10 @@ services:
         sawtooth-rest-api \
           --connect tcp://validator-2:4004 \
           --bind rest-api-2:8008 \
-          --opentsdb-url http://influxdb:8086 \
-          --opentsdb-db metrics
-      "
+          "
+#          --opentsdb-url http://influxdb:8086 \
+#          --opentsdb-db metrics
+#      "
     stop_signal: SIGKILL
 
   rest-api-3:
@@ -240,9 +245,10 @@ services:
         sawtooth-rest-api \
           --connect tcp://validator-3:4004 \
           --bind rest-api-3:8008 \
-          --opentsdb-url http://influxdb:8086 \
-          --opentsdb-db metrics
-      "
+          "
+#          --opentsdb-url http://influxdb:8086 \
+#          --opentsdb-db metrics
+#      "
     stop_signal: SIGKILL
 
   rest-api-4:
@@ -258,9 +264,10 @@ services:
         sawtooth-rest-api \
           --connect tcp://validator-4:4004 \
           --bind rest-api-4:8008 \
-          --opentsdb-url http://influxdb:8086 \
-          --opentsdb-db metrics
-      "
+          "
+#          --opentsdb-url http://influxdb:8086 \
+#          --opentsdb-db metrics
+#      "
     stop_signal: SIGKILL
 
   intkey-tp-0:
@@ -372,7 +379,7 @@ services:
       - 4004
     command: chronoshift-validator-registry-tp -C tcp://validator-0:4004
     environment:
-      PYTHONPATH: /project/sawtooth-core/consensus/poet/common
+      PYTHONPATH: /project/sawtooth-core/consensus/chronoshift/common
     stop_signal: SIGKILL
 
   chronoshift-validator-registry-tp-1:
@@ -384,7 +391,7 @@ services:
       - 4004
     command: chronoshift-validator-registry-tp -C tcp://validator-1:4004
     environment:
-      PYTHONPATH: /project/sawtooth-core/consensus/poet/common
+      PYTHONPATH: /project/sawtooth-core/consensus/chronoshift/common
     stop_signal: SIGKILL
 
   chronoshift-validator-registry-tp-2:
@@ -396,7 +403,7 @@ services:
       - 4004
     command: chronoshift-validator-registry-tp -C tcp://validator-2:4004
     environment:
-      PYTHONPATH: /project/sawtooth-core/consensus/poet/common
+      PYTHONPATH: /project/sawtooth-core/consensus/chronoshift/common
     stop_signal: SIGKILL
 
   chronoshift-validator-registry-tp-3:
@@ -408,7 +415,7 @@ services:
       - 4004
     command: chronoshift-validator-registry-tp -C tcp://validator-3:4004
     environment:
-      PYTHONPATH: /project/sawtooth-core/consensus/poet/common
+      PYTHONPATH: /project/sawtooth-core/consensus/chronoshift/common
     stop_signal: SIGKILL
 
   chronoshift-validator-registry-tp-4:
@@ -420,7 +427,7 @@ services:
       - 4004
     command: chronoshift-validator-registry-tp -C tcp://validator-4:4004
     environment:
-      PYTHONPATH: /project/sawtooth-core/consensus/poet/common
+      PYTHONPATH: /project/sawtooth-core/consensus/chronoshift/common
     stop_signal: SIGKILL
 
   client:
@@ -442,24 +449,24 @@ services:
         /project/sawtooth-core/signing:\
         /project/sawtooth-core/cli"
 
-  influxdb:
-    build:
-      context: ..
-      dockerfile: influxdb/sawtooth-stats-influxdb
-    image: sawtooth-stats-influxdb:latest
-    container_name: sawtooth-poet-influxdb
-    ports:
-      - "8086:8086"
-    stop_signal: SIGKILL
-
-  grafana:
-    build:
-      context: ..
-      dockerfile: grafana/sawtooth-stats-grafana
-    image: sawtooth-stats-grafana:latest
-    container_name: sawtooth-poet-grafana
-    ports:
-      - "3000:3000"
-    volumes:
-      - ../../:/project/sawtooth-core
-    stop_signal: SIGKILL
+#  influxdb:
+#    build:
+#      context: ..
+#      dockerfile: influxdb/sawtooth-stats-influxdb
+#    image: sawtooth-stats-influxdb:latest
+#    container_name: sawtooth-poet-influxdb
+#    ports:
+#      - "8086:8086"
+#    stop_signal: SIGKILL
+#
+#  grafana:
+#    build:
+#      context: ..
+#      dockerfile: grafana/sawtooth-stats-grafana
+#    image: sawtooth-stats-grafana:latest
+#    container_name: sawtooth-poet-grafana
+#    ports:
+#      - "3000:3000"
+#    volumes:
+#      - ../../:/project/sawtooth-core
+#    stop_signal: SIGKILL

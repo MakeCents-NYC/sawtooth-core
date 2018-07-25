@@ -81,6 +81,10 @@ build_python() {
     pypath=$pypath:$build_dir/consensus/poet/common/tests
     build_python_pkg "consensus/poet/common"  $pypath
 
+    pypath=$build_dir/consensus/chronoshift/common
+    pypath=$pypath:$build_dir/consensus/chronoshift/common/tests
+    build_python_pkg "consensus/chronoshift/common"  $pypath
+
     build_python_pkg "utility/ias_client"
 
     # Group 2: Depends only on 1
@@ -111,6 +115,18 @@ build_python() {
     pypath=$pypath:$build_dir/consensus/poet/families/tests
     build_python_pkg "consensus/poet/families" $pypath
 
+
+    pypath=$build_dir/integration
+    pypath=$pypath:$build_dir/sdk/python
+    pypath=$pypath:$build_dir/signing
+    pypath=$pypath:$build_dir/consensus/chronoshift/common
+    pypath=$pypath:$build_dir/consensus/chronoshift/families
+    pypath=$pypath:$build_dir/consensus/chronoshift/families/tests
+    build_python_pkg "consensus/chronoshift/families" $pypath
+
+
+
+
     # Group 4: Depends on 1, 2, & 3
     pypath=$build_dir/signing
     pypath=$pypath:$build_dir/validator
@@ -119,6 +135,8 @@ build_python() {
     pypath=$pypath:$build_dir/consensus/poet/families
     pypath=$pypath:$build_dir/consensus/poet/families/tests
     build_python_pkg "consensus/poet/simulator" $pypath
+
+
 
     pypath=$build_dir/signing
     pypath=$pypath:$build_dir/validator
@@ -129,12 +147,34 @@ build_python() {
     pypath=$pypath:$build_dir/consensus/poet/simulator
     build_python_pkg "consensus/poet/core" $pypath
 
+
+
+    pypath=$build_dir/signing
+    pypath=$pypath:$build_dir/validator
+    pypath=$pypath:$build_dir/consensus/chronoshift/common
+    pypath=$pypath:$build_dir/consensus/chronoshift/core
+    pypath=$pypath:$build_dir/consensus/chronoshift/families
+    pypath=$pypath:$build_dir/consensus/chronoshift/families/tests
+    build_python_pkg "consensus/chronoshift/simulator" $pypath
+
+
+    pypath=$build_dir/signing
+    pypath=$pypath:$build_dir/validator
+    pypath=$pypath:$build_dir/consensus/chronoshift/common
+    pypath=$pypath:$build_dir/consensus/chronoshift/common/tests
+    pypath=$pypath:$build_dir/consensus/chronoshift/core
+    pypath=$pypath:$build_dir/consensus/chronoshift/core/tests
+    pypath=$pypath:$build_dir/consensus/chronoshift/simulator
+    build_python_pkg "consensus/chronoshift/core" $pypath
+
     pypath=$build_dir/sdk/python
     pypath=$pypath:$build_dir/utility/ias_client
     build_python_pkg "utility/ias_proxy" $pypath
 
     # Group 5: Depends on 1-4
     build_python_pkg "consensus/poet/cli" $pypath
+
+    build_python_pkg "consensus/chronoshift/cli" $pypath
 
     # Group 6: PoET
     # No dependencies on anything above, builds last for simplicity

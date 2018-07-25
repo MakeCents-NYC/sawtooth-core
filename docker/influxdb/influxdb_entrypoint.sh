@@ -17,11 +17,11 @@
 if [ ! -f "/var/lib/influxdb/.init" ]; then  
   exec influxd $@ &
 
-  until wget -q "http://localhost:8086/ping" 2> /dev/null; do
+  until wget -q "http://influxdb:8086/ping" 2> /dev/null; do
     sleep 1
   done
 
-  curl -i -XPOST "http://localhost:8086/query" --data-urlencode "q=CREATE DATABASE metrics"
+  curl -i -XPOST "http://influxdb:8086/query" --data-urlencode "q=CREATE DATABASE metrics"
 
   touch "/var/lib/influxdb/.init"
 
