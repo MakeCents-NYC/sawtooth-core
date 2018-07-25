@@ -50,6 +50,8 @@ class ConsensusFactory(object):
             )
         elif module_name == 'poet':
             module_package = 'sawtooth_poet.poet_consensus'
+        elif module_name == 'chornoshift':
+            module_package = 'chronoshift_cs.chronoshift_consensus'
 
         try:
             return importlib.import_module(module_package)
